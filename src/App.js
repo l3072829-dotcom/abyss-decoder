@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 
 // --- 審判數據：20題極端對立 + 1題最終告解 ---
-// 每一選項都帶有 weights (計分) 與 tag (行為追蹤標籤)
 const questions = [
   { id: 1, story: "末日方舟最後一個位子。左邊是你嚇得發抖的親生兒子，右邊是唯一能救全人類的科學家。", text: "你的權杖指向誰？", options: [{ label: "推開兒子，讓科學家上船。", weights: { D: 5, P: 2, tag: "效能優先" } }, { label: "緊抱兒子，讓人類文明隨之熄滅。", weights: { S: 5, O: 3, tag: "血緣本能" } }] },
   { id: 2, story: "這名窮人偷了藥救活百名孤兒，但他犯了法。若你放過他，法律將淪為廢紙；若你判他，孤兒必死。", text: "現在，敲下你的法槌。", options: [{ label: "有罪。秩序不容許任何藉口。", weights: { D: 5, P: 1, tag: "法治至上" } }, { label: "無罪。正義不該只有一種死法。", weights: { S: 5, O: 2, tag: "情理守護" } }] },
@@ -39,94 +38,107 @@ export default function App() {
   const [step, setStep] = useState(0); 
   const [idx, setIdx] = useState(0);
   const [scores, setScores] = useState({ P: 0, D: 0, O: 0, S: 0, honest: 0 });
-  const [userTags, setUserTags] = useState([]); // 紀錄使用者的所有行為標籤
+  const [userTags, setUserTags] = useState([]);
 
   const handleSelect = (opt) => {
     const newScores = { ...scores };
     Object.keys(opt.weights).forEach(k => { if(k !== 'tag') newScores[k] += opt.weights[k]; });
     setScores(newScores);
     setUserTags([...userTags, opt.weights.tag]);
-    
     if (idx < questions.length - 1) setIdx(idx + 1);
     else setStep(2);
   };
 
+  const copyShareText = (title, logic) => {
+    const text = `我在 #深淵解碼器 得到的靈魂判定是：【${title}】\n\n系統紀錄：${logic}\n\n這分析準到我想報警... 推薦你也去測測看你的偽善程度。`;
+    navigator.clipboard.writeText(text);
+    alert("已複製專屬分享文字，快去 Threads 貼上你的罪證吧！");
+  };
+
+  const openSponsor = () => {
+    // 這裡替換成你的綠界或 Buy Me a Coffee 連結，保護帳戶不被風控
+    window.open("https://p.ecpay.com.tw/XXXXXX", "_blank"); 
+  };
+
   const result = useMemo(() => {
     if (step !== 2) return null;
-
-    // --- 動態標籤追蹤邏輯 ---
     const dynamicTags = [];
     if (scores.P > 25) dynamicTags.push({ name: "支配意志", desc: "你在關鍵節點選擇了操控與神性視角，顯示出你對弱秩序的極度厭惡。" });
     if (scores.S > 30) dynamicTags.push({ name: "超負擔共情", desc: "你即便在必死局中也試圖保全微小生命，這使你的決策過程充滿了人性的陣痛。" });
     if (userTags.filter(t => t === "血緣本能").length >= 2) dynamicTags.push({ name: "部落守護者", desc: "當文明與血脈衝突時，你毫不猶豫地選擇了私親，顯示出你原始且強大的生物本能。" });
     if (userTags.filter(t => t === "效能優先" || t === "功利主義").length >= 3) dynamicTags.push({ name: "極致冷理性", desc: "證據顯示你將世界視為精密的數學模型，任何不能增加總效能的犧牲對你而言都是錯誤。" });
-    if (scores.honest === 0 && scores.P > 15) dynamicTags.push({ name: "拒絕妥協的傲慢", desc: "你拒絕向深淵展示弱點，這顯示出一種近乎病態的自我神格化傾向。" });
-
-    // --- 核心靈魂結果判定 ---
+    
     let base = {};
     if (scores.honest === 1) {
       base = { title: "人格面具的囚徒", color: "#FFFFFF", logic: "偵測到『道德自慮』：你透過完美的道德抉擇來迴避內心的陰影，卻在最後一刻因誠實而崩潰。", content: "你正在經歷一場精心的社會性表演。榮格指出，面具是為了適應社會產生的偽裝，但對你而言，這副面具已與皮膚癒合。你展現的高尚並非源於利他，而是源於對平庸惡念的極度恐懼。你試圖透過極端的道德選擇來對沖內心的陰暗動機，因為在那層皮囊下，你比誰都害怕失控。" };
     } else if (scores.P > scores.S) {
-      base = { title: "冷血的權力棋手", color: "#3b82f6", logic: "偵測到『馬基雅維利』傾向：你成功過濾了感性雜訊，將人類視為可消耗的數據與功能性組件。", content: "你是天生的現實主義者。在你的宇宙裡，生命只有用途，沒有價值。你的人格核心是一部精密的計算機，在面對極端抉擇時，你毫不猶豫地選擇了效能與秩序，而非那些被你視為弱點的情感。你不需要被理解，因為弱者的理解對你而言毫無意義。" };
+      base = { title: "冷血的權力棋手", color: "#3b82f6", logic: "偵測到『馬基雅維利』傾向：你成功過濾了感性雜訊，將人類視為可消耗的數據與功能性組件。", content: "你是天生的現實主義者。在你的宇宙裡，生命只有用途，沒有價值。你的人格核心是一部精密的計算機，在面對極端抉擇時，你毫不猶豫地選擇了效能與秩序，而非那些被你視為弱點的情感。" };
     } else {
-      base = { title: "虛無的解構者", color: "#a855f7", logic: "偵測到『存在主義虛無』：你拒絕任何既定的道德框架，所有的決策皆源於對絕對自由的病態執著。", content: "你正處於末人與超人之間的裂縫中。你渴望超越世俗，卻又被殘存的人性拉扯。尼采曾說當你凝視深淵時，深淵也在凝視你。你並不恐懼深淵，你只是恐懼在深淵中發現自己依然平庸。你試圖解構所有規則，卻在打破一切之後面臨無邊無際的虛無感。" };
+      base = { title: "虛無的解構者", color: "#a855f7", logic: "偵測到『存在主義虛無』：你拒絕任何既定的道德框架，所有的決策皆源於對絕對自由的病態執著。", content: "你正處於末人與超人之間的裂縫中。你渴望超越世俗，卻又被殘存的人性拉扯。尼采曾說當你凝視深淵時，深淵也在凝視你。你並不恐懼深淵，你只是恐懼在深淵中發現自己依然平庸。" };
     }
-
-    return { ...base, tags: dynamicTags.slice(0, 3) }; // 顯示最核心的3個追蹤標籤
+    return { ...base, tags: dynamicTags.slice(0, 3) };
   }, [step, scores, userTags]);
 
   return (
-    <div style={{ backgroundColor: 'black', color: 'white', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', WebkitFontSmoothing: 'antialiased' }}>
+    <div style={{ 
+      backgroundColor: '#000', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', 
+      fontFamily: '-apple-system, system-ui, sans-serif', 
+      padding: 'env(safe-area-inset-top) 24px env(safe-area-inset-bottom) 24px', 
+      WebkitFontSmoothing: 'antialiased', boxSizing: 'border-box' 
+    }}>
       
       {step === 0 && (
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: '4.5rem', fontWeight: '900', letterSpacing: '-4px', marginBottom: '0' }}>ABYSS</h1>
-          <h1 style={{ fontSize: '4.5rem', fontWeight: '900', letterSpacing: '-4px', marginBottom: '20px', marginTop: '-20px' }}>DECODER</h1>
-          <p style={{ opacity: 0.2, marginBottom: '80px', letterSpacing: '10px', fontSize: '0.65rem' }}>AI-DRIVEN PSYCHOLOGICAL AUDIT v2.5</p>
-          <button onClick={() => setStep(1)} style={{ padding: '22px 70px', borderRadius: '50px', border: 'none', backgroundColor: 'white', color: 'black', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.2rem', transition: '0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}>解開你的偽善</button>
+        <div style={{ textAlign: 'center', marginTop: '30vh' }}>
+          <h1 style={{ fontSize: 'clamp(3rem, 15vw, 5rem)', fontWeight: '900', letterSpacing: '-0.05em', marginBottom: '40px', lineHeight: '0.9' }}>ABYSS<br/>DECODER</h1>
+          <p style={{ opacity: 0.2, letterSpacing: '8px', fontSize: '0.7rem', marginBottom: '60px' }}>AI-DRIVEN AUDIT v2.5</p>
+          <button onClick={() => setStep(1)} style={{ padding: '20px 60px', borderRadius: '50px', border: 'none', backgroundColor: '#fff', color: '#000', fontWeight: '700', fontSize: '1.1rem', cursor: 'pointer', transition: '0.3s' }}>開始審判</button>
         </div>
       )}
 
       {step === 1 && (
-        <div style={{ maxWidth: '650px', width: '100%' }}>
-          <div style={{ fontSize: '10px', opacity: 0.2, letterSpacing: '5px', marginBottom: '40px' }}>LOGGING_DATA // PHASE {idx + 1} OF 21</div>
-          <h2 style={{ fontSize: '2.1rem', fontWeight: '600', marginBottom: '20px', lineHeight: '1.2', letterSpacing: '-1px' }}>{questions[idx].story}</h2>
-          <p style={{ opacity: 0.4, marginBottom: '60px', fontSize: '1.35rem', fontWeight: '300', lineHeight: '1.5' }}>{questions[idx].text}</p>
-          {questions[idx].options.map((opt, i) => (
-            <button key={i} onClick={() => handleSelect(opt)} style={{ width: '100%', textAlign: 'left', padding: '35px', marginBottom: '20px', borderRadius: '25px', backgroundColor: '#0a0a0a', border: '1px solid #1a1a1a', color: 'white', cursor: 'pointer', fontSize: '1.2rem', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)', ':hover': { backgroundColor: '#111' } }}>
-              {opt.label}
-            </button>
-          ))}
+        <div style={{ maxWidth: '500px', width: '100%', marginTop: '10vh' }}>
+          <div style={{ fontSize: '10px', opacity: 0.3, letterSpacing: '4px', marginBottom: '30px' }}>PHASE {idx + 1} / 21</div>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: '600', marginBottom: '20px', lineHeight: '1.3', letterSpacing: '-0.5px' }}>{questions[idx].story}</h2>
+          <p style={{ opacity: 0.5, marginBottom: '40px', fontSize: '1.1rem', fontWeight: '300' }}>{questions[idx].text}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {questions[idx].options.map((opt, i) => (
+              <button key={i} onClick={() => handleSelect(opt)} style={{ width: '100%', textAlign: 'left', padding: '24px', borderRadius: '18px', backgroundColor: '#0f0f0f', border: '1px solid #1a1a1a', color: '#fff', fontSize: '1.05rem', lineHeight: '1.4', cursor: 'pointer', transition: '0.2s' }}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {step === 2 && result && (
-        <div style={{ textAlign: 'center', maxWidth: '850px', paddingBottom: '100vh', paddingTop: '100px' }}>
-          <div style={{ fontSize: '10px', opacity: 0.3, letterSpacing: '10px', marginBottom: '50px' }}>[ AUDIT_RESULT_FINAL ]</div>
-          <h1 style={{ color: result.color, fontSize: '5rem', fontWeight: '900', marginBottom: '40px', letterSpacing: '-5px' }}>{result.title}</h1>
-          
-          <div style={{ backgroundColor: '#050505', border: '1px solid #111', padding: '70px 60px', borderRadius: '60px', lineHeight: '2.4', fontSize: '1.4rem', fontWeight: '300', textAlign: 'justify', color: '#ccc', marginBottom: '60px', boxShadow: '0 40px 100px rgba(0,0,0,0.8)' }}>
-            {result.content}
-          </div>
+        <div style={{ textAlign: 'center', maxWidth: '550px', width: '100%', paddingTop: '60px', paddingBottom: '80px' }}>
+          <div style={{ fontSize: '10px', opacity: 0.2, letterSpacing: '6px', marginBottom: '40px' }}>FINAL_REPORT</div>
+          <h1 style={{ color: result.color, fontSize: 'clamp(3.5rem, 18vw, 5.5rem)', fontWeight: '900', letterSpacing: '-0.06em', marginBottom: '40px', lineHeight: '0.85', wordBreak: 'keep-all' }}>{result.title}</h1>
+          <div style={{ backgroundColor: '#0a0a0a', border: '1px solid #161616', padding: '40px 28px', borderRadius: '32px', lineHeight: '2.2', fontSize: '1.15rem', fontWeight: '300', textAlign: 'justify', color: '#d1d1d1', marginBottom: '40px' }}>{result.content}</div>
 
-          <div style={{ textAlign: 'left', marginBottom: '80px' }}>
-            <h4 style={{ color: result.color, fontSize: '12px', margin: '0 0 25px 0', letterSpacing: '4px', fontWeight: 'bold', opacity: 0.6 }}>特質解碼追蹤 // TRAIT_EVIDENCE</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
+          <div style={{ textAlign: 'left', marginBottom: '60px' }}>
+            <h4 style={{ color: result.color, fontSize: '11px', margin: '0 0 20px 5px', letterSpacing: '2px', opacity: 0.4 }}>TRAIT_EVIDENCE</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {result.tags.map((tag, i) => (
-                <div key={i} style={{ border: '1px solid #111', padding: '30px', borderRadius: '30px', backgroundColor: '#080808' }}>
-                  <span style={{ color: result.color, fontWeight: 'bold', fontSize: '1.1rem', display: 'block', marginBottom: '10px' }}>● {tag.name}</span>
-                  <p style={{ margin: 0, fontSize: '1rem', opacity: 0.5, lineHeight: '1.7', fontWeight: '300' }}>{tag.desc}</p>
+                <div key={i} style={{ border: '1px solid #161616', padding: '24px', borderRadius: '24px', backgroundColor: '#050505' }}>
+                  <span style={{ color: result.color, fontWeight: '700', fontSize: '1rem', display: 'block', marginBottom: '8px' }}>● {tag.name}</span>
+                  <p style={{ margin: 0, fontSize: '0.95rem', opacity: 0.5, lineHeight: '1.6' }}>{tag.desc}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: '30px', borderRadius: '30px', border: '1px dashed #222', textAlign: 'left' }}>
-             <h4 style={{ fontSize: '10px', color: '#444', marginBottom: '10px' }}>底層邏輯判定 // SYSTEM_KERNEL</h4>
-             <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>{result.logic}</p>
+          <div style={{ padding: '24px', borderRadius: '24px', border: '1px dashed #1a1a1a', textAlign: 'left', marginBottom: '60px' }}>
+             <h4 style={{ fontSize: '9px', color: '#333', marginBottom: '8px', letterSpacing: '1px' }}>SYSTEM_KERNEL</h4>
+             <p style={{ fontSize: '0.85rem', color: '#555', margin: 0, lineHeight: '1.5' }}>{result.logic}</p>
           </div>
 
-          <button onClick={() => window.location.reload()} style={{ marginTop: '100px', opacity: 0.2, background: 'none', border: 'none', color: '#fff', textDecoration: 'underline', cursor: 'pointer', letterSpacing: '2px' }}>REBOOT SYSTEM</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+             <button onClick={() => copyShareText(result.title, result.logic)} style={{ width: '100%', maxWidth: '300px', padding: '18px', borderRadius: '40px', border: '1px solid #333', backgroundColor: '#fff', color: '#000', fontWeight: '700', cursor: 'pointer' }}>複製罪證發到脆</button>
+             <button onClick={openSponsor} style={{ width: '100%', maxWidth: '300px', padding: '18px', borderRadius: '40px', border: 'none', backgroundColor: '#ea1b24', color: '#fff', fontWeight: '700', cursor: 'pointer' }}>支持開發者 (街口/綠界)</button>
+          </div>
+
+          <button onClick={() => window.location.reload()} style={{ marginTop: '50px', opacity: 0.2, background: 'none', border: 'none', color: '#fff', fontSize: '11px', letterSpacing: '2px', cursor: 'pointer' }}>REBOOT_SYSTEM</button>
         </div>
       )}
     </div>

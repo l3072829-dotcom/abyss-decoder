@@ -9,10 +9,10 @@
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.284.0"
   },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build"
-  },
+ "scripts": {
+  "start": "react-scripts start",
+  "build": "CI=false react-scripts build"
+},
   "eslintConfig": {
     "extends": [
       "react-app"

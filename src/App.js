@@ -8,7 +8,7 @@ const questions = [
   ]},
   { id: 2, story: "窮人偷藥救活百名孤兒，但他犯了法。若判他，孤兒必死；若放過他，法律將失效。", options: [
     { label: "有罪。秩序不容許任何藉口。", weights: { D: 5, P: 1, tag: "法治至上" }, whisper: "律法在你手中成了絞索，即便面對孤兒的哭聲，你依然冷酷。", analysis: "你相信規則是文明的最後防線，任何慈悲都不能成為破壞秩序的理由" },
-    { label: "無罪。正義不該只有一種死法。", weights: { S: 5, O: 2, tag: "情理守護" }, whisper: "你為了慈悲親手毀掉秩序，這是通往混難的開端。", analysis: "你對法規感到不屑，認為良知才是最高的法律，即便這會導致混亂" }
+    { label: "無罪。正義不該只有一種死法。", weights: { S: 5, O: 2, tag: "情理守護" }, whisper: "你為了慈悲親手毀掉秩序，這是通往混亂的開端。", analysis: "你對法規感到不屑，認為良知才是最高的法律，即便這會導致混亂" }
   ]},
   { id: 3, story: "敵軍就在門外。為了不被發現，你必須親手掐住懷中啼哭嬰兒的口鼻。", options: [
     { label: "為了多數人，終結這聲啼哭。", weights: { D: 5, P: 3, tag: "集體主義" }, whisper: "溫熱的呼吸消失在指縫間，你救了眾人，卻殺了靈魂。", analysis: "你掌握了極致的功利主義，明白生存需要踩在無辜者的屍骸上" },
@@ -27,7 +27,7 @@ const questions = [
     { label: "拒絕。若需邪惡救世，世界不配得救。", weights: { S: 5, O: 3, tag: "聖潔防線" }, whisper: "你守住了高尚，卻讓千萬人暴露在火光之下。", analysis: "你堅持手段的純粹性，即便代價是地圖上那千萬個無名點位的熄滅" }
   ]},
   { id: 7, story: "預知顯示你懷中的嬰兒三十年後會成為暴君。你的手就在他的喉嚨上。", options: [
-    { label: "掐下去。殺死未來的魔鬼。", weights: { D: 5, P: 2, tag: "風險規避" }, whisper: "你殺死了『可能性』，並自詡為拯救者。", analysis: "你相信決定論，願意為了扼殺風險而扼殺生命，你是時間的獨裁者" },
+    { label: "掐下去。殺死未來的魔鬼。", weights: { D: 5, P: 2, tag: "風險規備" }, whisper: "你殺死了『可能性』，並自詡為拯救者。", analysis: "你相信決定論，願意為了扼殺風險而扼殺生命，你是時間的獨裁者" },
     { label: "放開手。沒人能審判尚未發生的罪。", weights: { S: 5, O: 2, tag: "命定論者" }, whisper: "你親手種下了未來的災難，只為了當下的心安。", analysis: "你拒絕扮演神，選擇尊重當下的無辜，即便這可能在未來引發洪水滔天" }
   ]},
   { id: 8, story: "整座城市的繁榮建立在一個地窖小孩的痛苦上。帶走他，所有人的幸福都會崩塌。", options: [
@@ -95,7 +95,7 @@ export default function App() {
   const [history, setHistory] = useState([]); 
   const [whisper, setWhisper] = useState(""); 
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [copyLabel, setCopyLabel] = useState("複製結果連結");
+  const [copyStatus, setCopyStatus] = useState("複製結果連結");
 
   const handleSelect = (opt) => {
     setWhisper(opt.whisper);
@@ -109,25 +109,22 @@ export default function App() {
       setWhisper("");
       setIsTransitioning(false);
 
-      if (idx < questions.length - 1) {
-        setIdx(idx + 1);
-      } else {
-        setStep(2);
-      }
+      if (idx < questions.length - 1) setIdx(idx + 1);
+      else setStep(2);
     }, 1600);
   };
 
-  const copyUrl = () => {
+  const copyToClipboard = () => {
     navigator.clipboard.writeText(window.location.href);
-    setCopyLabel("連結已複製");
-    setTimeout(() => setCopyLabel("複製結果連結"), 2000);
+    setCopyStatus("已複製到剪貼簿");
+    setTimeout(() => setCopyStatus("複製結果連結"), 2000);
   };
 
   const result = useMemo(() => {
     if (step !== 2) return null;
     const evidenceA = history[0] || "尋求邏輯外的出口";
     const evidenceB = history[10] || "在道德邊界上行走";
-    const finalProof = history[20] || "拒絕被定義";
+    const finalProof = history[history.length - 1] || "拒絕被定義";
 
     const isHonest = scores.honest === 1;
     const isPower = scores.P > scores.S;
@@ -147,57 +144,52 @@ export default function App() {
   }, [step, scores, history]);
 
   return (
-    <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', fontFamily: '-apple-system, system-ui, sans-serif' }}>
       
       {step === 0 && (
         <div style={{ textAlign: 'center', marginTop: '25vh', animation: 'fadeIn 2s' }}>
           <h1 style={{ fontSize: '4rem', fontWeight: '900', letterSpacing: '15px' }}>ABYSS</h1>
-          <p style={{ opacity: 0.3, letterSpacing: '4px', marginTop: '20px', fontSize: '10px' }}>IDENTITY_DECODER_v7.7</p>
-          <button onClick={() => setStep(1)} style={{ marginTop: '60px', padding: '18px 60px', borderRadius: '40px', border: 'none', background: '#fff', fontWeight: '800', cursor: 'pointer', transition: '0.3s' }}>開啟審判</button>
+          <button onClick={() => setStep(1)} style={{ marginTop: '60px', padding: '18px 60px', borderRadius: '40px', border: 'none', background: '#fff', fontWeight: '800', cursor: 'pointer' }}>開啟審判</button>
         </div>
       )}
 
-      {step === 1 && (
+      {step === 1 && questions[idx] && (
         <div style={{ maxWidth: '500px', width: '100%', transition: 'all 0.5s', opacity: isTransitioning ? 0.3 : 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.3, fontSize: '10px', marginBottom: '30px' }}>
             <span>LOG_{idx + 1}/21</span>
-            <span>DATA_FUSION_IN_PROGRESS</span>
+            <span>ANALYTIC_ENGINE_RUNNING</span>
           </div>
-          <h2 style={{ fontSize: '1.6rem', lineHeight: '1.4', marginBottom: '40px', fontWeight: '600' }}>{questions[idx].story}</h2>
-          
-          <div style={{ height: '60px', marginBottom: '10px' }}>
-            {/* 這裡移除了 flash 動畫，改為靜態淡入效果 */}
+          <h2 style={{ fontSize: '1.6rem', lineHeight: '1.4', marginBottom: '40px' }}>{questions[idx].story}</h2>
+          <div style={{ height: '60px' }}>
             {whisper && <p style={{ color: '#ff4d4d', fontStyle: 'italic', fontSize: '1.1rem', animation: 'fadeIn 0.8s forwards' }}>「{whisper}」</p>}
           </div>
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents: isTransitioning ? 'none' : 'auto' }}>
             {questions[idx].options.map((opt, i) => (
-              <button key={i} onClick={() => handleSelect(opt)} style={{ padding: '24px', borderRadius: '20px', background: '#0a0a0a', color: '#fff', border: '1px solid #1a1a1a', textAlign: 'left', cursor: 'pointer', fontSize: '1.05rem', transition: '0.3s' }}>{opt.label}</button>
+              <button key={i} onClick={() => handleSelect(opt)} style={{ padding: '24px', borderRadius: '20px', background: '#0a0a0a', color: '#fff', border: '1px solid #1a1a1a', textAlign: 'left', cursor: 'pointer' }}>{opt.label}</button>
             ))}
           </div>
         </div>
       )}
 
       {step === 2 && result && (
-        <div style={{ maxWidth: '650px', width: '100%', textAlign: 'center', animation: 'fadeIn 2.5s' }}>
-          <div style={{ fontSize: '12px', color: result.color, letterSpacing: '5px', marginBottom: '20px' }}>DECODING_COMPLETE</div>
-          <h1 style={{ color: result.color, fontSize: 'clamp(3rem, 10vw, 5rem)', fontWeight: '900', marginBottom: '45px', letterSpacing: '-0.03em' }}>{result.title}</h1>
+        <div style={{ maxWidth: '650px', width: '100%', textAlign: 'center', animation: 'fadeIn 2s' }}>
+          <div style={{ fontSize: '12px', color: result.color, letterSpacing: '5px', marginBottom: '20px' }}>FINAL_DECODING</div>
+          <h1 style={{ color: result.color, fontSize: 'clamp(3rem, 10vw, 5rem)', fontWeight: '900', marginBottom: '40px' }}>{result.title}</h1>
           
-          <div id="capture-area" style={{ background: '#080808', padding: '50px 35px', borderRadius: '45px', border: `1px solid ${result.color}22`, lineHeight: '2.5', fontSize: '1.25rem', textAlign: 'justify', color: '#e1e1e1', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
+          <div style={{ background: '#080808', padding: '50px 35px', borderRadius: '45px', border: `1px solid ${result.color}22`, lineHeight: '2.5', fontSize: '1.25rem', textAlign: 'justify', color: '#e1e1e1' }}>
             {result.desc}
           </div>
 
-          {/* 功能按鈕區：複製連結與截圖分享 */}
-          <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'center', gap: '15px' }}>
-            <button onClick={copyUrl} style={{ background: '#111', border: '1px solid #222', color: '#888', padding: '12px 25px', borderRadius: '30px', fontSize: '12px', cursor: 'pointer', transition: '0.3s' }}>
-              {copyLabel}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '40px' }}>
+            <button onClick={copyToClipboard} style={{ background: '#111', border: '1px solid #222', color: '#888', padding: '12px 25px', borderRadius: '30px', fontSize: '12px', cursor: 'pointer', transition: '0.3s' }}>
+              {copyStatus}
             </button>
             <button onClick={() => window.print()} style={{ background: '#111', border: '1px solid #222', color: '#888', padding: '12px 25px', borderRadius: '30px', fontSize: '12px', cursor: 'pointer', transition: '0.3s' }}>
               截圖分享結果
             </button>
           </div>
 
-          <button onClick={() => window.location.reload()} style={{ marginTop: '100px', background: 'none', border: 'none', color: '#222', cursor: 'pointer', fontSize: '12px', letterSpacing: '4px' }}>REBOOT SYSTEM</button>
+          <button onClick={() => window.location.reload()} style={{ marginTop: '80px', background: 'none', border: 'none', color: '#222', cursor: 'pointer', fontSize: '12px', letterSpacing: '3px' }}>REBOOT SYSTEM</button>
         </div>
       )}
 

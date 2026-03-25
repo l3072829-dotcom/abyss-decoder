@@ -49,15 +49,11 @@ export default function App() {
     else setStep(2);
   };
 
-  const copyShareText = (title, logic) => {
-    const text = `我在 #深淵解碼器 得到的靈魂判定是：【${title}】\n\n系統紀錄：${logic}\n\n這分析準到我想報警... 推薦你也去測測看你的偽善程度。`;
+  const copyShareLink = (title, logic) => {
+    const currentUrl = window.location.href;
+    const text = `我在 #深淵解碼器 得到的靈魂判定是：【${title}】\n\n系統紀錄：${logic}\n\n這分析準到我想報警... 推薦你也去測測看你的偽善程度：\n${currentUrl}`;
     navigator.clipboard.writeText(text);
-    alert("已複製專屬分享文字，快去 Threads 貼上你的罪證吧！");
-  };
-
-  const openSponsor = () => {
-    // 這裡替換成你的綠界或 Buy Me a Coffee 連結，保護帳戶不被風控
-    window.open("https://p.ecpay.com.tw/XXXXXX", "_blank"); 
+    alert("🔗 連結與罪證已複製！\n快去 Threads 貼上並附上你的截圖吧。");
   };
 
   const result = useMemo(() => {
@@ -80,29 +76,24 @@ export default function App() {
   }, [step, scores, userTags]);
 
   return (
-    <div style={{ 
-      backgroundColor: '#000', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', 
-      fontFamily: '-apple-system, system-ui, sans-serif', 
-      padding: 'env(safe-area-inset-top) 24px env(safe-area-inset-bottom) 24px', 
-      WebkitFontSmoothing: 'antialiased', boxSizing: 'border-box' 
-    }}>
+    <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', padding: 'env(safe-area-inset-top) 24px env(safe-area-inset-bottom) 24px', WebkitFontSmoothing: 'antialiased', boxSizing: 'border-box' }}>
       
       {step === 0 && (
         <div style={{ textAlign: 'center', marginTop: '30vh' }}>
-          <h1 style={{ fontSize: 'clamp(3rem, 15vw, 5rem)', fontWeight: '900', letterSpacing: '-0.05em', marginBottom: '40px', lineHeight: '0.9' }}>ABYSS<br/>DECODER</h1>
-          <p style={{ opacity: 0.2, letterSpacing: '8px', fontSize: '0.7rem', marginBottom: '60px' }}>AI-DRIVEN AUDIT v2.5</p>
+          <h1 style={{ fontSize: 'clamp(3rem, 15vw, 5.2rem)', fontWeight: '900', letterSpacing: '-0.06em', marginBottom: '40px', lineHeight: '0.9' }}>ABYSS<br/>DECODER</h1>
+          <p style={{ opacity: 0.2, letterSpacing: '8px', fontSize: '0.7rem', marginBottom: '60px' }}>AI-DRIVEN AUDIT v2.6</p>
           <button onClick={() => setStep(1)} style={{ padding: '20px 60px', borderRadius: '50px', border: 'none', backgroundColor: '#fff', color: '#000', fontWeight: '700', fontSize: '1.1rem', cursor: 'pointer', transition: '0.3s' }}>開始審判</button>
         </div>
       )}
 
       {step === 1 && (
-        <div style={{ maxWidth: '500px', width: '100%', marginTop: '10vh' }}>
-          <div style={{ fontSize: '10px', opacity: 0.3, letterSpacing: '4px', marginBottom: '30px' }}>PHASE {idx + 1} / 21</div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: '600', marginBottom: '20px', lineHeight: '1.3', letterSpacing: '-0.5px' }}>{questions[idx].story}</h2>
-          <p style={{ opacity: 0.5, marginBottom: '40px', fontSize: '1.1rem', fontWeight: '300' }}>{questions[idx].text}</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ maxWidth: '500px', width: '100%', marginTop: '8vh', marginBottom: '5vh' }}>
+          <div style={{ fontSize: '10px', opacity: 0.3, letterSpacing: '4px', marginBottom: '30px', fontWeight: '700' }}>PHASE {idx + 1} / 21</div>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: '600', marginBottom: '20px', lineHeight: '1.4', letterSpacing: '-0.5px' }}>{questions[idx].story}</h2>
+          <p style={{ opacity: 0.4, marginBottom: '45px', fontSize: '1.15rem', fontWeight: '300', lineHeight: '1.6' }}>{questions[idx].text}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {questions[idx].options.map((opt, i) => (
-              <button key={i} onClick={() => handleSelect(opt)} style={{ width: '100%', textAlign: 'left', padding: '24px', borderRadius: '18px', backgroundColor: '#0f0f0f', border: '1px solid #1a1a1a', color: '#fff', fontSize: '1.05rem', lineHeight: '1.4', cursor: 'pointer', transition: '0.2s' }}>
+              <button key={i} onClick={() => handleSelect(opt)} style={{ width: '100%', textAlign: 'left', padding: '26px', borderRadius: '20px', backgroundColor: '#0a0a0a', border: '1px solid #1a1a1a', color: '#fff', fontSize: '1.05rem', lineHeight: '1.5', cursor: 'pointer', transition: '0.2s' }}>
                 {opt.label}
               </button>
             ))}
@@ -111,34 +102,34 @@ export default function App() {
       )}
 
       {step === 2 && result && (
-        <div style={{ textAlign: 'center', maxWidth: '550px', width: '100%', paddingTop: '60px', paddingBottom: '80px' }}>
-          <div style={{ fontSize: '10px', opacity: 0.2, letterSpacing: '6px', marginBottom: '40px' }}>FINAL_REPORT</div>
-          <h1 style={{ color: result.color, fontSize: 'clamp(3.5rem, 18vw, 5.5rem)', fontWeight: '900', letterSpacing: '-0.06em', marginBottom: '40px', lineHeight: '0.85', wordBreak: 'keep-all' }}>{result.title}</h1>
-          <div style={{ backgroundColor: '#0a0a0a', border: '1px solid #161616', padding: '40px 28px', borderRadius: '32px', lineHeight: '2.2', fontSize: '1.15rem', fontWeight: '300', textAlign: 'justify', color: '#d1d1d1', marginBottom: '40px' }}>{result.content}</div>
+        <div style={{ textAlign: 'center', maxWidth: '550px', width: '100%', paddingTop: '60px', paddingBottom: '100px' }}>
+          
+          <div style={{ display: 'inline-block', border: '1px solid rgba(255,255,255,0.15)', padding: '10px 24px', borderRadius: '50px', fontSize: '11px', opacity: 0.6, letterSpacing: '2px', marginBottom: '50px', fontWeight: '500' }}>📸 建議截圖保存你的靈魂樣貌</div>
+          
+          <h1 style={{ color: result.color, fontSize: 'clamp(3.5rem, 18vw, 5.5rem)', fontWeight: '900', letterSpacing: '-0.07em', marginBottom: '40px', lineHeight: '0.85', wordBreak: 'keep-all' }}>{result.title}</h1>
+          
+          <div style={{ backgroundColor: '#080808', border: '1px solid #141414', padding: '45px 30px', borderRadius: '35px', lineHeight: '2.4', fontSize: '1.2rem', fontWeight: '300', textAlign: 'justify', color: '#d1d1d1', marginBottom: '50px', boxShadow: '0 30px 60px rgba(0,0,0,0.5)' }}>{result.content}</div>
 
           <div style={{ textAlign: 'left', marginBottom: '60px' }}>
-            <h4 style={{ color: result.color, fontSize: '11px', margin: '0 0 20px 5px', letterSpacing: '2px', opacity: 0.4 }}>TRAIT_EVIDENCE</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h4 style={{ color: result.color, fontSize: '11px', margin: '0 0 25px 5px', letterSpacing: '3px', opacity: 0.5, fontWeight: '700' }}>TRAIT_EVIDENCE</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {result.tags.map((tag, i) => (
-                <div key={i} style={{ border: '1px solid #161616', padding: '24px', borderRadius: '24px', backgroundColor: '#050505' }}>
-                  <span style={{ color: result.color, fontWeight: '700', fontSize: '1rem', display: 'block', marginBottom: '8px' }}>● {tag.name}</span>
-                  <p style={{ margin: 0, fontSize: '0.95rem', opacity: 0.5, lineHeight: '1.6' }}>{tag.desc}</p>
+                <div key={i} style={{ border: '1px solid #111', padding: '28px', borderRadius: '28px', backgroundColor: '#040404' }}>
+                  <span style={{ color: result.color, fontWeight: '700', fontSize: '1.1rem', display: 'block', marginBottom: '10px' }}>● {tag.name}</span>
+                  <p style={{ margin: 0, fontSize: '1rem', opacity: 0.5, lineHeight: '1.7', fontWeight: '300' }}>{tag.desc}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div style={{ padding: '24px', borderRadius: '24px', border: '1px dashed #1a1a1a', textAlign: 'left', marginBottom: '60px' }}>
-             <h4 style={{ fontSize: '9px', color: '#333', marginBottom: '8px', letterSpacing: '1px' }}>SYSTEM_KERNEL</h4>
-             <p style={{ fontSize: '0.85rem', color: '#555', margin: 0, lineHeight: '1.5' }}>{result.logic}</p>
+          <div style={{ padding: '28px', borderRadius: '28px', border: '1px dashed #222', textAlign: 'left', marginBottom: '70px' }}>
+             <h4 style={{ fontSize: '10px', color: '#444', marginBottom: '12px', letterSpacing: '2px', fontWeight: '700' }}>SYSTEM_KERNEL</h4>
+             <p style={{ fontSize: '0.9rem', color: '#666', margin: 0, lineHeight: '1.6', fontWeight: '300' }}>{result.logic}</p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
-             <button onClick={() => copyShareText(result.title, result.logic)} style={{ width: '100%', maxWidth: '300px', padding: '18px', borderRadius: '40px', border: '1px solid #333', backgroundColor: '#fff', color: '#000', fontWeight: '700', cursor: 'pointer' }}>複製罪證發到脆</button>
-             <button onClick={openSponsor} style={{ width: '100%', maxWidth: '300px', padding: '18px', borderRadius: '40px', border: 'none', backgroundColor: '#ea1b24', color: '#fff', fontWeight: '700', cursor: 'pointer' }}>支持開發者 (街口/綠界)</button>
-          </div>
+          <button onClick={() => copyShareLink(result.title, result.logic)} style={{ width: '100%', maxWidth: '320px', padding: '22px', borderRadius: '60px', border: 'none', backgroundColor: '#fff', color: '#000', fontWeight: '900', fontSize: '1.15rem', cursor: 'pointer', transition: '0.3s', boxShadow: '0 20px 40px rgba(255,255,255,0.15)' }}>複製連結並分享</button>
 
-          <button onClick={() => window.location.reload()} style={{ marginTop: '50px', opacity: 0.2, background: 'none', border: 'none', color: '#fff', fontSize: '11px', letterSpacing: '2px', cursor: 'pointer' }}>REBOOT_SYSTEM</button>
+          <button onClick={() => window.location.reload()} style={{ marginTop: '70px', opacity: 0.2, background: 'none', border: 'none', color: '#fff', fontSize: '11px', letterSpacing: '3px', cursor: 'pointer', textDecoration: 'underline' }}>REBOOT_SYSTEM</button>
         </div>
       )}
     </div>

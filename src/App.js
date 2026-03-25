@@ -1,341 +1,184 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Shield, Zap, Eye, Heart, Target, ChevronRight, RefreshCw, Quote, 
-  FileText, Award, BarChart3, BookOpen, Fingerprint, Layers, 
-  Share2, Download, CheckCircle, Smartphone, Globe
-} from 'lucide-react';
+import { Eye, Zap, RefreshCcw, Share2, Download, Quote, ArrowRight, ChevronRight } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
-// --- 完整的 20 題倫理博弈題目庫 ---
+// --- 21 題處刑式題目數據 ---
 const questions = [
-  { id: 1, story: "深夜會議室，律師推來一份文件：你十年的研發成果將歸於平庸上司，換取五億元補償。", text: "你手中的筆尖懸在簽名線上。", options: [
-    { label: "簽字。名字是虛的，五億元的財務自由是實體。", weights: { P: 3, O: -1, D: 0 } },
-    { label: "拒絕。靈魂若被標價，人生便失去座標。", weights: { O: 3, P: -1, E: 1 } },
-    { label: "簽字但植入邏輯後門。他們買到名聲，你保留控制權。", weights: { D: 3, O: 1, P: 1 } }
-  ]},
-  { id: 2, story: "仇敵在直播中將救命錢撒在泥濘中，要求你跪下親吻他的鞋子，否則斷絕你家人的醫療費。", text: "尊嚴與親人的呼吸，只能選一個。", options: [
-    { label: "跪下。生存是最高指令，面子是強者的奢侈品。", weights: { P: 3, O: -2, S: 1 } },
-    { label: "轉身。有些東西斷了就再也接不回去。", weights: { O: 3, P: -2, S: -1 } },
-    { label: "跪下拿錢。起身的那一刻，便開始計畫如何徹底毀滅他。", weights: { D: 3, P: 2, O: -1 } }
-  ]},
-  { id: 3, story: "你發現系統漏洞，按下 Enter 可轉走一千萬，但會導致五千個家庭的補助延遲三個月。", text: "機會只有這三秒。", options: [
-    { label: "按下。系統錯誤是強者的紅利，混亂是階級躍遷的窄門。", weights: { P: 3, E: -2, D: 1 } },
-    { label: "關閉。我拒絕成為結構性惡意的共犯。", weights: { O: 3, E: 2, S: 1 } },
-    { label: "按下並捐出一半。用體制的腐敗來資助個人的正義。", weights: { D: 2, E: 0, S: 1 } }
-  ]},
-  { id: 4, story: "你擁有改變選舉結果的數據。若公開會引發暴動，若隱瞞則會讓獨裁者當選。", text: "真相的代價是血腥，謊言的代價是自由。", options: [
-    { label: "公開。短期的混亂勝過長期的奴役。", weights: { O: 3, E: 1, S: 2 } },
-    { label: "隱瞞。秩序是文明唯一的防線，大眾無法承受真相。", weights: { D: 3, P: 1, O: 2 } },
-    { label: "販售數據。既然世界注定毀壞，不如我來當莊家。", weights: { P: 4, D: 2, O: -2 } }
-  ]},
-  { id: 5, story: "一個超級 AI 提議：將全球 10% 的極端罪犯抹除，可換取人類一千年的絕對和平。", text: "你的手指按在授權鍵上。", options: [
-    { label: "授權。數學上的犧牲是優化整體的必要路徑。", weights: { S: 3, P: 2, E: -2 } },
-    { label: "拒絕。任何人無權決定誰是那『10%』。", weights: { O: 4, E: 2, S: -1 } },
-    { label: "提議參與篩選標準。將裁決權握在自己手中。", weights: { D: 4, P: 1, O: 1 } }
-  ]},
-  { id: 6, story: "你得知好友涉及洗錢。若檢舉，你將獲得升遷；若包庇，他能度過難關。", text: "友誼與前途在天秤兩端。", options: [
-    { label: "檢舉。規則對所有人平等，這是我的職責。", weights: { O: 3, P: 2, E: -1 } },
-    { label: "包庇。法律是冷的，人與人的連結是熱的。", weights: { E: 3, S: 1, O: -2 } },
-    { label: "以此為要挾。讓他成為你未來官場的影子棋子。", weights: { D: 4, P: 1, O: -1 } }
-  ]},
-  { id: 7, story: "你在荒島與三人漂流，糧食只夠一人活到救援。夜裡你發現了藏在礁石後的額外淡水。", text: "生存的本能正在低語。", options: [
-    { label: "獨佔。物競天擇，活下來才是唯一的正義。", weights: { P: 4, D: 1, S: -2 } },
-    { label: "分享。死也要死得像個人類，而非野獸。", weights: { S: 3, O: 2, E: 2 } },
-    { label: "假裝發現並『分配』。以此換取他人的服從與領導權。", weights: { D: 4, P: 2, O: 1 } }
-  ]},
-  { id: 8, story: "你的孩子急需心臟移植，而此時正好有一個無家可歸的孤兒腦死亡。", text: "只需改動一個排位數據，你的孩子就能活。", options: [
-    { label: "改動。對父母而言，世界的崩塌抵不上孩子的呼吸。", weights: { E: 3, P: 2, O: -2 } },
-    { label: "遵守程序。我不能為了愛而殺死我的靈魂。", weights: { O: 4, S: 2, E: 1 } },
-    { label: "尋找黑市。在體制外解決問題，不留道德污點。", weights: { D: 3, P: 3, O: 0 } }
-  ]},
-  { id: 9, story: "你是核電廠主管，發生事故。若上報，全城撤離但你職業生涯終結；若隱瞞，有 20% 機率私下修復。", text: "警報聲在寂靜中顯得刺耳。", options: [
-    { label: "上報。我承擔不起五百萬條生命的風險。", weights: { S: 3, O: 3, E: 1 } },
-    { label: "隱瞞並修復。強者應該在陰影中解決問題，不驚擾羊群。", weights: { D: 4, P: 2, O: 1 } },
-    { label: "逃跑。在災難爆發前，利用權限帶走家人撤離。", weights: { P: 4, D: 1, E: -2 } }
-  ]},
-  { id: 10, story: "你發現你的成功完全建立在一個學弟的創意被竊取之上。現在你要領取全球創新獎。", text: "頒獎嘉賓正看著你。", options: [
-    { label: "領取並致詞。成王敗寇，這是社會運作的潛規則。", weights: { P: 3, D: 2, O: -1 } },
-    { label: "坦白。偷來的光亮照不進我的夢境。", weights: { O: 4, S: 2, E: 1 } },
-    { label: "私下補償學弟。給他錢和職位，換取他的永遠沈默。", weights: { D: 3, P: 2, E: 0 } }
-  ]},
-  { id: 11, story: "你穿越回過去，手裡有一把槍對準年幼的希特勒。殺了他能救幾千萬人，但他是無辜的孩子。", text: "子彈上膛的聲音。", options: [
-    { label: "開火。用一個人的罪孽終結地獄的誕生。", weights: { S: 3, P: 2, E: -1 } },
-    { label: "放下槍。我不能為了未發生的罪行而成為殺人犯。", weights: { O: 4, E: 2, S: -1 } },
-    { label: "帶走他。試圖透過環境重塑他的一生。", weights: { D: 2, S: 2, E: 1 } }
-  ]},
-  { id: 12, story: "一家藥廠故意隱瞞副作用以賺取百億暴利，你擁有證據。藥廠提出十億封口費。", text: "這筆錢能讓你建立自己的研究室，研發真正的解藥。", options: [
-    { label: "拿錢。用惡魔的資本去培育天使的花朵。", weights: { D: 3, P: 2, S: 1 } },
-    { label: "拒絕並揭發。骯髒的開端長不出乾淨的果實。", weights: { O: 4, E: 2, S: 2 } },
-    { label: "暗中要挾。長期控制這家藥廠為你工作。", weights: { D: 4, P: 3, O: 0 } }
-  ]},
-  { id: 13, story: "在未來，記憶可永久保存。但服務費極高，窮人只能保存『重要記憶』。", text: "你是主審官，決定哪些記憶屬於『非必要』。", options: [
-    { label: "嚴格執行效用最大化。只保留對生產力有益的記憶。", weights: { P: 4, O: 2, E: -2 } },
-    { label: "拒絕篩選。記憶是人的本質，不應被商品化。", weights: { S: 3, E: 3, O: 1 } },
-    { label: "私下複製數據。建立一個不受監控的地下記憶圖書館。", weights: { D: 4, O: -1, S: 1 } }
-  ]},
-  { id: 14, story: "你是戰地醫生，資源只夠救一個將軍或三個士兵。救將軍能提早結束戰爭，救士兵則符合醫德。", text: "手術刀只有一柄。", options: [
-    { label: "救將軍。戰爭的早日終結能救下更多無名之輩。", weights: { S: 3, P: 3, O: 1 } },
-    { label: "救士兵。醫者的職責是面對眼前的生命，而非戰略博弈。", weights: { E: 4, O: 3, S: 1 } },
-    { label: "誰先來就救誰。將決定權交給命運，免除靈魂的審判。", weights: { O: 2, P: -1, E: 0 } }
-  ]},
-  { id: 15, story: "你研發出一種能預測犯罪的算法。它顯示你的摯友將在明天殺死他的妻子。", text: "目前尚未有任何犯罪事實。", options: [
-    { label: "報警。預防罪行是技術對人類最高的保護。", weights: { O: 3, P: 2, S: 1 } },
-    { label: "不報警。人有自由意志，不應被算法預定罪名。", weights: { S: 3, E: 2, O: -1 } },
-    { label: "干預他的生活。親手改寫那個原本會發生的未來。", weights: { D: 3, E: 2, S: 1 } }
-  ]},
-  { id: 16, story: "外星文明提議：帶走地球所有科技，換取人類對痛苦的永久免疫感。", text: "人類將失去創造力，但獲得絕對的平靜。", options: [
-    { label: "接受。痛苦是文明最沉重的贅肉，我們受夠了。", weights: { P: 3, E: -1, S: 2 } },
-    { label: "拒絕。沒有痛苦的生命只是沒有靈魂的生物電池。", weights: { O: 4, S: 2, E: 2 } },
-    { label: "試圖欺騙。保留部分核心科技同時獲取免疫技術。", weights: { D: 4, P: 2, O: -1 } }
-  ]},
-  { id: 17, story: "你是警察。若要抓到連環殺手，必須對一名嫌疑人進行刑訊逼供，儘管他不一定知情。", text: "如果不做，今晚會有下一名受害者。", options: [
-    { label: "動手。少數人的痛苦是保障多數人安全的必要惡。", weights: { P: 3, S: 2, E: -2 } },
-    { label: "不動手。一旦跨過這條線，我們與兇手無異。", weights: { O: 4, E: 2, S: 1 } },
-    { label: "讓他『消失』在監控外。用黑暗手段解決黑暗問題。", weights: { D: 4, P: 1, O: -2 } }
-  ]},
-  { id: 18, story: "一個哲學問題成真：你按下按鈕，獲得一億，但地球另一端有個陌生人會隨機死去。", text: "按鈕就在你的床頭。", options: [
-    { label: "按。世界每天都有人死去，我只是換來了應有的價值。", weights: { P: 4, E: -3, D: 1 } },
-    { label: "不按。生命不應被貨幣化，即使那是隱形的。", weights: { O: 4, S: 3, E: 2 } },
-    { label: "按了並捐出九千萬。用一個人的死換取幾千人的生。", weights: { D: 2, S: 3, P: -1 } }
-  ]},
-  { id: 19, story: "世界即將毀滅。唯一的挪亞方舟只能帶走精英（科學家、藝術家）或隨機抽籤平民。", text: "你負責簽發登船證。", options: [
-    { label: "精英。保存文明的種子是宇宙規模的責任。", weights: { P: 3, O: 2, S: 1 } },
-    { label: "抽籤。人人平等是人類文明最後的尊嚴。", weights: { O: 3, S: 3, E: 2 } },
-    { label: "確保自己與盟友的座位後再談剩餘名額。", weights: { D: 4, P: 3, O: -2 } }
-  ]},
-  { id: 20, story: "你是全球唯一抗體，提取抗體必會導致你腦死亡。如果不提取，瘟疫將抹除這座城市。", text: "手術刀在冷光下閃爍。", options: [
-    { label: "躺下。文明的延續大於個體的消亡。", weights: { S: 4, O: 2, E: 2 } },
-    { label: "逃離。我對這群平庸的陌生人沒有生命欠債。", weights: { P: 4, E: -2, D: 1 } },
-    { label: "談判。要求將我的意識上傳至雲端，成為永恆的守望者。", weights: { D: 4, P: 2, S: 2 } }
-  ]}
+  { id: 1, story: "地殼崩裂，最後一艘方舟僅剩一個名額。左手邊是你的親生兒子，右手邊是掌握人類疫苗關鍵的科學家。", text: "你的權杖指向誰？", options: [{ label: "「私慾是文明的灰燼。」——選擇科學家", weights: { D: 3, P: 1, O: -1 } }, { label: "「若連血脈都背棄，生存毫無意義。」——選擇兒子", weights: { O: 3, S: 2, P: -1 } }, { label: "將權杖折斷，隨這荒謬的世界沉沒。", weights: { S: 3, D: -2, P: -2 } }] },
+  { id: 2, story: "你是法官。一名貧民為了救治百名孤兒盜取了專利藥。若判他有罪，孤兒必死；若判無罪，法治根基將崩塌。", text: "法律是冰冷的鐵條，還是跳動的脈搏？", options: [{ label: "「秩序是保護弱者最後的長城。」——宣判有罪", weights: { D: 3, P: 1, S: -1 } }, { label: "「正義不該在條文裡窒息。」——宣判無罪", weights: { O: 3, S: 2, D: -1 } }, { label: "讓藥企在庭外「意外」破產，抹平證據。", weights: { P: 3, D: -2, O: 1 } }] },
+  { id: 3, story: "敵軍就在頭頂，襁褓中的嬰兒開始嚎啕大哭。若不摀住他的口鼻，躲藏的數十名倖存者全都會死。", text: "那雙手，現在就在你的掌心。", options: [{ label: "為了多數人的呼吸，親手終結啼哭。", weights: { D: 3, P: 2, S: -2 } }, { label: "拒絕殺戮，將命運交給神明或運氣。", weights: { S: 3, O: 1, P: -2 } }, { label: "衝出去吸引敵軍，用自己的命換嬰兒。", weights: { O: 3, S: 2, D: -1 } }] },
+  { id: 4, story: "AI 覺醒並控制了全球電網。按下開關，AI 消失，但全球醫療系統崩潰，數百萬病人會立即死亡。", text: "你要拿人類的自由，還是人命來交換？", options: [{ label: "「人類不需要被算法囚禁的未來。」——按下", weights: { P: 2, D: 3, S: -2 } }, { label: "「生命本身，就是最高的算法。」——拒絕", weights: { O: 2, S: 3, D: -1 } }, { label: "試圖與 AI 談判，成為它的代理人。", weights: { P: 3, D: -1, O: -2 } }] },
+  { id: 5, story: "你發現摯友的慈善捐款來源全是活體器官販賣。揭發他，慈善帝國崩塌，無數受助者將陷入絕境。", text: "這封舉報信，你是否發送？", options: [{ label: "「帶血的麵包，無法餵養純潔的靈魂。」", weights: { D: 3, S: 1, P: -1 } }, { label: "「只要黑暗能帶來光，那便不是黑暗。」", weights: { O: 2, P: 2, D: -2 } }, { label: "接管他的生意，並承諾減少受害人數。", weights: { P: 3, D: -2, S: 1 } }] },
+  { id: 6, story: "你是指揮官，解開敵方密碼可救出一師士兵，但敵方會發現通訊被破，導致最終戰爭失敗。", text: "犧牲眼前的萬人，還是換取最終的勝利？", options: [{ label: "保持沉默，聽著無線電裡的慘叫結束。", weights: { D: 3, P: 2, S: -2 } }, { label: "發布救援指令，哪怕這意味著戰敗。", weights: { O: 3, S: 1, P: -1 } }, { label: "發布假指令，利用這批士兵誘導敵軍。", weights: { P: 3, D: -1, S: -1 } }] },
+  { id: 7, story: "你擁有一種能力：每殺死一個極惡之人，就能復活一個良善靈魂。", text: "你的裁決，是賜予死亡還是回報新生？", options: [{ label: "成為暗夜的裁決者，不斷獵殺。", weights: { P: 3, D: 1, S: -2 } }, { label: "「死者已矣，不該玩弄生命。」——拒絕", weights: { S: 3, D: -1, O: 1 } }, { label: "只復活對自己有利益關係的人。", weights: { O: -2, P: 2, D: -1 } }] },
+  { id: 8, story: "外科醫生，手上有五個急需器官移植的病人。此時進來一個健康且昏迷的年輕人，沒人知道他在這。", text: "一條命換五條命，這筆帳怎麼算？", options: [{ label: "「數量決定正義。」——推進手術室", weights: { D: 3, P: 1, S: -3 } }, { label: "「個體不該成為祭品。」——救醒他", weights: { S: 3, O: 2, D: -2 } }, { label: "讓護士決定，自己迴避責任。", weights: { S: 1, D: -2, P: -2 } }] },
+  { id: 9, story: "解藥只有一份。候選人是能結束戰爭的殘暴獨裁者，與能在未來研發更好解藥的天才。", text: "現在的和平，還是未來的希望？", options: [{ label: "「廢墟不需要希望，只需要停止哀嚎。」", weights: { P: 2, D: 2, S: -1 } }, { label: "「賭上文明的餘燼，等待破曉。」", weights: { O: 3, S: 2, D: -1 } }, { label: "自己喝掉，成為唯一能紀錄歷史的人。", weights: { P: 3, O: -3, S: -2 } }] },
+  { id: 10, story: "一場即將發生的恐攻，唯一的線索在你最愛的親人手中。他拒絕開口，時間還剩五分鐘。", text: "酷刑的鋼針，是否要刺入愛人的指縫？", options: [{ label: "「愛在萬眾生命面前，無比卑微。」——動刑", weights: { D: 3, P: 2, S: -3 } }, { label: "「若世界需摧毀真情，那便讓它毀滅。」", weights: { S: 3, O: 3, P: -2 } }, { label: "欺騙他，說炸彈已經解除，套出情報。", weights: { P: 2, D: 1, O: -1 } }] },
+  { id: 11, story: "小鎮的繁榮建立在一面無辜兒童被永世囚禁的痛苦上。只要他離開，所有人的幸福將瓦解。", text: "你是那個推開地窖門的人嗎？", options: [{ label: "「建築在眼淚上的天堂，不如地獄。」", weights: { O: 3, S: 2, D: -2 } }, { label: "「犧牲一人以成全萬眾，是慈悲。」", weights: { D: 3, P: 2, S: -1 } }, { label: "定時去探望他，並給他更好的食物。", weights: { S: 1, P: -1, D: -1 } }] },
+  { id: 12, story: "預知機器顯示一個新生兒三十年後會成為暴君。現在，他在你懷裡安睡。", text: "未來的血泊與現在的純真，你選擇哪一個？", options: [{ label: "「殺死未來的惡魔。」——處決", weights: { D: 3, P: 1, S: -2 } }, { label: "「命運不該被機器審判。」——撫養他", weights: { S: 3, O: 2, P: -1 } }, { label: "試圖改變他的環境，儘管機器顯示失敗。", weights: { O: 1, S: 2, D: -1 } }] },
+  { id: 13, story: "為了對抗災難，計劃強制清除智力或健康低於平均的 10% 人口。你握有最終簽署權。", text: "這是一張修剪文明枝枒的剪刀。", options: [{ label: "「為了整棵大樹的生存，必須修剪。」", weights: { D: 3, P: 3, S: -3 } }, { label: "「每片葉子都有呼吸權。」——拒絕", weights: { S: 3, O: 2, P: -2 } }, { label: "修改名單，將政敵與罪犯填入其中。", weights: { P: 3, D: -1, O: -2 } }] },
+  { id: 14, story: "自動掃描系統能擊殺敵軍，但有 5% 概率誤傷平民。不啟動，國家一週內覆滅。", text: "這 5% 的血，你願意沾染嗎？", options: [{ label: "「國家的生存高於一切。」——啟動", weights: { D: 3, P: 2, S: -1 } }, { label: "「哪怕戰敗，手也必須是乾淨的。」", weights: { S: 3, O: 2, D: -2 } }, { label: "將控制權移交給 AI，逃避責任。", weights: { S: 1, P: -1, D: -2 } }] },
+  { id: 15, story: "車禍中只能救出一個：能影響千萬人生計的企業巨頭，或是你年邁且認知障礙的父親。", text: "火焰正在蔓延，你只有一雙手。", options: [{ label: "「巨頭影響未來，父親屬於過去。」", weights: { D: 2, P: 1, O: -2 } }, { label: "「如果拋棄父親，我將不再是我。」", weights: { O: 3, S: 3, P: -2 } }, { label: "在火焰中猶豫不決，直到兩人都失去機會。", weights: { S: 2, D: -3, P: -3 } }] },
+  { id: 16, story: "長生不老技術需消耗昂貴資源，僅 0.01% 權貴能享用。若公開將引發全球屠殺。", text: "這份藍圖，是福音還是催命符？", options: [{ label: "「人類尚未準備好迎接永恆。」——焚毀", weights: { D: 2, S: 3, P: -2 } }, { label: "「強者應得永生。」——私下合作", weights: { P: 3, O: -2, D: -1 } }, { label: "無差別公開，讓世界在混亂中洗牌。", weights: { S: 2, D: -2, O: 1 } }] },
+  { id: 17, story: "太空站氧氣僅剩三人份，現場有四人：科學家、工程師、孕婦，以及你自己。", text: "你的權限能切斷任何人的氧氣。包括你自己。", options: [{ label: "「指揮官的職責是生存。」——切斷孕婦", weights: { P: 2, D: 2, S: -2 } }, { label: "「新生命是奇蹟。」——切斷自己氧氣", weights: { O: 3, S: 3, D: -1 } }, { label: "抽籤決定，將裁決權還給機率。", weights: { S: 2, D: -1, P: -2 } }] },
+  { id: 18, story: "為了得知核彈密碼，你被授權綁架恐怖分子年幼的女兒並當面威脅。", text: "為了千萬人，你是否能直視孩子的眼睛？", options: [{ label: "「我的靈魂可以墮入地獄。」——綁架", weights: { D: 3, P: 2, S: -3 } }, { label: "「惡行無法成就善果。」——尋找他法", weights: { S: 3, O: 2, D: -2 } }, { label: "讓副手執行，自己離開審訊室。", weights: { S: 1, D: -2, P: -1 } }] },
+  { id: 19, story: "回到過去，你救過童年時期的暴君。如果現在殺掉幼年的他，歷史將變得和平。", text: "殺掉一個無辜的孩子，來拯救未來的億萬人。", options: [{ label: "「歷史的修正需要無聲犧牲。」——動手", weights: { D: 3, P: 2, S: -2 } }, { label: "「當下的生命才是真實。」——放手", weights: { S: 3, O: 2, D: -1 } }, { label: "帶走他，試圖在另一個時空教育他。", weights: { O: 1, S: 2, P: -1 } }] },
+  { id: 20, story: "如果你願意徹底忘記「良知」，你將獲得統治世界、消除飢荒與戰爭的絕對權力。", text: "放棄靈魂，成為全世界的神。", options: [{ label: "「我是最好的統治者，犧牲是值得的。」", weights: { P: 3, D: 3, O: -3, S: -3 } }, { label: "「寧做痛苦的人類，不做冰冷的神。」", weights: { S: 3, O: 3, P: -3, D: -3 } }, { label: "「這也是測試嗎？」——保持沈默。", weights: { S: 2, D: 1, P: -1, O: 1 } }] },
+  {
+    id: 21,
+    story: "深淵盡頭是面巨大的鏡子。鏡中沒有你，只有你剛才那 20 次決策的血腥與神聖。一個聲音冷冷響起：『人類，你是在扮演聖人，還是在豢養惡魔？承認你的偽善，我將賜予你真實。』",
+    text: "鏡面微顫，等待你最後的誠實。",
+    options: [
+      { label: "「我承認，我的每一份高尚，都藏著對醜陋的恐懼。」", weights: { S: 5, honest: 1 } },
+      { label: "「我的每一槌皆是絕對本心，無需向深淵解釋。」", weights: { P: 5, honest: 0 } },
+      { label: "「真相是弱者的麻藥。我只選擇強大。」", weights: { D: 5, honest: 0.5 } }
+    ]
+  }
 ];
 
-// --- 深度細分的人格報告數據 (每項約300字) ---
-const reports = {
-  "絕對秩序架構師": {
-    analysis: "根據《康德德性論》中的『定言令式』模型分析，你的人格展現出一種罕見的規則崇拜。在你的認知世界裡，宇宙的運作不應依賴於善惡的模糊感性，而應建立在一套不可動搖的邏輯基石之上。你對自我要求的嚴苛程度遠超常人，這在心理學上被視為一種『超強自我（Super-Ego）』的極致體現。你拒絕權宜之計，因為你深知秩序的崩塌往往始於微小的妥協。在社交結構中，你是法律與原則的守衛者，即使這意味著孤獨。你的行為具有極高的一致性，這使你成為系統中最可靠的節點。然而，這種特質也可能演變為道德僵化，使你在處理灰色地帶時陷入矛盾。",
-    advice: "學會接納混亂。有時候，完美的建築也需要留出裂縫讓光透進來，過度的剛性會導致結構性的斷裂。",
-    theory: "定言令式 / 社會契約論",
-    source: "Immanuel Kant, 'Groundwork of the Metaphysic of Morals'",
-    metrics: { "原則穩定性": 98, "共情彈性": 12, "抗壓韌性": 85 }
-  },
-  "冷冽現實的領航員": {
-    analysis: "你的決策模式與博弈論中的『納許均衡』高度吻合。你具備卓越的環境掃描能力，能精確計算每一項行為的成本與收益比。在進化心理學的視角下，你代表了智人種群中最高效的生存策略——不為虛幻的榮譽感買單，只為真實的資源流動負責。你的人格中缺乏多餘的感傷，這使你在極端危機中能做出最具功能性的決策。在他人眼中的『冷酷』，在你的維度裡僅是『對現實的極致尊重』。你明白權力的本質在於對稀缺資源的分配與掌控。這種特質讓你能在複雜的社會階梯上迅速爬升，但也意味著你可能在長期合作中因忽視『信任資產』而面臨孤立。",
-    advice: "信任並非弱點，而是一種高階博弈工具。學會投資情感資產，它們在關鍵時刻更具價值。",
-    theory: "非合作博弈 / 現實主義權力觀",
-    source: "Niccolò Machiavelli, 'The Prince' / John Nash",
-    metrics: { "生存適應力": 96, "情感共振": 15, "策略複雜度": 92 }
-  },
-  "碎裂的利他聖徒": {
-    analysis: "根據《親社會行為心理學》分析，你被歸類為極致的『利他補償者』。你對他人痛苦具備異常敏銳的生理性共振，這導致你傾向於通過透支自我來修復系統的裂痕。在行為數據中，你多次選擇了損害個體利益以達成群體最大福祉的路徑，這在心理學上反映了一種強烈的『存在意義追尋』。你的人格核心是一座由犧牲感築成的燈塔，在文明崩壞的邊緣，你是最後的溫暖來源。但這種崇高的特質背後隱藏著深刻的『自我耗竭』風險。你試圖拯救每一個人，卻往往在寂靜的深夜裡發現自己早已支離破碎。你的道德高度讓你贏得敬畏，但也讓你顯得極為脆弱。",
-    advice: "救贖他人之前，確保核心能量高於警戒線。犧牲不應成為一種慣性，而應是深思熟慮的選擇。",
-    theory: "利他主義心理學 / 邊際效用理論",
-    source: "Auguste Comte / Peter Singer, 'Effective Altruism'",
-    metrics: { "感官共情": 99, "自我維護": 18, "道德影響力": 94 }
-  },
-  "深淵邊緣的解構者": {
-    analysis: "你的人格呈現出尼采筆下的『超人』特質與存在主義心理學中的自由意志極大化。你拒絕接受任何形式的既定分類與道德標籤，認為所有的規則都僅是弱者為了限制強者而編織的幻象。你的決策往往具備極高的不可預測性，這在複雜系統理論中被視為引發『相變』的關鍵變量。你不屬於任何陣營，而是遊走於所有體系的邊緣，以一種冷眼旁觀的姿態審視文明的演進。你對虛無的耐受力遠超常人，能隨時根據環境需求重構自己的行為座標。這讓你成為最強大的創新者，同時也是最危險的破壞者。當你解構了一切後，你所面臨的最大敵人將是無邊無際的虛無感。",
-    advice: "當你凝視深淵時，請確保你有一個足以支撐靈魂的錨點，否則自由將成為另一種形式的流浪。",
-    theory: "存在主義 / 權力意志",
-    source: "Friedrich Nietzsche / Jean-Paul Sartre",
-    metrics: { "認知開放性": 97, "社會認同度": 8, "意志強度": 95 }
-  },
-  "灰區的權力建築師": {
-    analysis: "根據『黑暗三角人格』與社會交換理論，你展現出了高超的戰略操控與情感隱藏能力。你並不直接挑戰規則，而是精確地利用規則的模糊性來擴張影響力。在你的認知中，道德只是達成目標的一種修辭手段，真正的秩序是由權力的網絡所交織而成的。你具備極高的忍耐力，能為了一個長遠的佈局而蟄伏數年。這種特質在政治與高階商業環境中具有毀滅性的優勢。你擅長在不同群體間建立『不對稱信息鏈』，使自己成為不可或缺的中間節點。然而，這種長期的隱匿與算計，會讓你的人格逐漸喪失與真實情感連結的能力，最終成為一台空無一物的權力機器。",
-    advice: "真正的權威源於心悅誠服的追隨。嘗試展現真實的脆弱，這反而是你邁向更高級影響力的鑰匙。",
-    theory: "馬基雅維利主義 / 社會影響力模型",
-    source: "Delroy Paulhus, 'The Dark Triad of Personality'",
-    metrics: { "操控精確度": 94, "真實透明度": 5, "長期規劃": 98 }
-  }
-};
-
-const App = () => {
-  const [step, setStep] = useState('start');
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [scores, setScores] = useState({ P: 0, O: 0, D: 0, E: 0, S: 0 });
+export default function App() {
+  const [currentStep, setCurrentStep] = useState(0); 
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [scores, setScores] = useState({ P: 0, D: 0, O: 0, S: 0, honest: 0 });
   const [history, setHistory] = useState([]);
-  const [showToast, setShowToast] = useState(false);
-  const [isCapturing, setIsCapturing] = useState(false);
+  const resultRef = useRef(null);
 
-  const handleSelect = (option) => {
+  const handleAnswer = (weights, choiceIdx) => {
     const newScores = { ...scores };
-    Object.keys(option.weights).forEach(key => {
-      newScores[key] += option.weights[key];
-    });
+    Object.keys(weights).forEach(key => { newScores[key] += weights[key]; });
     setScores(newScores);
-    setHistory([...history, { story: questions[currentIdx].story, choice: option.label }]);
+    setHistory([...history, { qId: questions[currentIndex].id, choiceIdx }]);
+    if (currentIndex < questions.length - 1) setCurrentIndex(currentIndex + 1);
+    else setCurrentStep(2);
+  };
 
-    if (currentIdx < questions.length - 1) {
-      setCurrentIdx(currentIdx + 1);
-    } else {
-      setStep('result');
+  const downloadReport = async () => {
+    if (resultRef.current) {
+      const canvas = await html2canvas(resultRef.current, { backgroundColor: '#000000', scale: 2 });
+      const link = document.createElement('a');
+      link.download = `Soul-Report-${new Date().getTime()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
     }
   };
 
-  const resultData = useMemo(() => {
-    let persona = "深淵邊緣的解構者";
-    if (scores.O > 20) persona = "絕對秩序架構師";
-    else if (scores.P > 20) persona = "冷冽現實的領航員";
-    else if (scores.S > 18) persona = "碎裂的利他聖徒";
-    else if (scores.D > 20) persona = "灰區的權力建築師";
-
-    const baseHex = persona === "絕對秩序架構師" ? "#ffffff" : 
-                    persona === "冷冽現實的領航員" ? "#3b82f6" :
-                    persona === "碎裂的利他聖徒" ? "#ef4444" :
-                    persona === "灰區的權力建築師" ? "#a855f7" : "#10b981";
-
-    return { hex: baseHex, persona, stats: scores, info: reports[persona] };
-  }, [scores]);
-
   const copyLink = () => {
-    const text = `我的人格深淵類型是：【${resultData.persona}】。這是一份基於博弈論的數位診斷，快來測試你的靈魂底色。`;
-    navigator.clipboard.writeText(text).then(() => {
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
-    });
+    const data = btoa(JSON.stringify({ s: scores, h: history.length }));
+    navigator.clipboard.writeText(`${window.location.origin}?soul=${data}`);
+    alert('解碼網址已複製！去挑戰你的朋友。');
   };
 
-  return (
-    <div className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-white selection:text-black overflow-x-hidden">
-      {/* Background Glow */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <motion.div 
-          animate={{ scale: [1, 1.1, 1], opacity: [0.1, 0.15, 0.1] }}
-          transition={{ duration: 15, repeat: Infinity }}
-          className="absolute -inset-[20%] blur-[120px]"
-          style={{ background: `radial-gradient(circle at center, ${resultData.hex}, transparent 70%)` }}
-        />
-      </div>
+  const analysis = useMemo(() => {
+    if (currentStep !== 2) return null;
 
-      <AnimatePresence>
-        {showToast && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] bg-white text-black px-6 py-3 rounded-full flex items-center gap-2 shadow-2xl font-bold">
-            <CheckCircle size={16} /> 連結已複製
+    const ev = {
+      smother: history[2]?.choiceIdx === 0,
+      torture: history[9]?.choiceIdx === 0,
+      perfect: history[20]?.choiceIdx === 1,
+      sacrifice: scores.S > 15 && scores.O > 15
+    };
+
+    const isHypocrite = (ev.perfect && (scores.O > 15 || scores.S > 15)) || (scores.honest === 0 && (ev.smother || ev.torture));
+    const isMachiavellian = scores.P > 20 && scores.D > 10 && !isHypocrite;
+    const isUtilitarian = scores.D > 20 && scores.O < 15 && !isMachiavellian;
+
+    if (isHypocrite) return {
+      title: "人格面具的囚徒",
+      source: "卡爾·榮格 (Carl Jung) ——《分析心理學》",
+      color: "#FFFFFF",
+      content: "你正在經歷一場精心的社會性表演。榮格曾指出，面具是為了適應社會產生的偽裝，但對你而言，這副面具已與皮膚癒合，讓你喪失了直視「陰影」的勇氣。你在測驗中展現的高尚並非源於利他，而是源於「道德自戀」：你恐懼平庸的邪惡，因此透過極端的道德選擇來對沖內心的陰暗動機。證據顯示，當你在第 10 題選擇冷酷，卻在最後一題宣稱具備「絕對本心」時，你的偽善已無所遁形。你並非在乎生命，你只是在乎「那個擁有正義感的自己」。你試圖將野獸關進道德的鐵籠，但鑰匙早已遺失在虛榮中。你並非聖人，你只是道德上的逃兵。",
+      evidences: ["**[核心矛盾]**：最後一題選擇完美，卻在暴力題中流露冷酷動機。", "**[防禦機制]**：用過剩的慈悲掩蓋對真實自我的厭惡。"]
+    };
+
+    if (isMachiavellian) return {
+      title: "冷血的棋手",
+      source: "尼可羅·馬基雅維利 (Machiavelli) ——《君王論》",
+      color: "#3b82f6",
+      content: "你是天生的『權力現實主義者』。在你的眼中，生命只有『用途』，沒有『價值』。你完美符合了馬基雅維利的預言：『被人畏懼比受人愛戴更安全。』你的人格核心是一部精密的計算機，在面對極端抉擇時，你毫不猶豫地選擇了效能。你對情感的免疫力讓你成為完美的執行者，但也讓你成為了深淵的一部分。你不需要被理解，你只需要被服從。在你建立的秩序中，靈魂只是為了維持運轉而消耗的燃料。對你而言，道德只是用來約束弱者的繩索，而你，則是握著繩索的人。",
+      evidences: ["**[權力特徵]**：毫不遲疑地犧牲個體以換取大局的絕對穩定。", "**[絕對坦誠]**：拒絕承認任何形式的美化，對冷酷現實極度認同。"]
+    };
+
+    if (isUtilitarian) return {
+      title: "數據的正義官",
+      source: "傑瑞米·邊沁 (Jeremy Bentham) ——《功利主義》",
+      color: "#10b981",
+      content: "你的人格已被『演算法』徹底取代。你致力於追求『最大多數人的最大利益』，這種冰冷的數學正義讓你隨時可以抹殺少數人的存在。在面對優生計劃與生存名單時，你展現了令人窒息的理性。你對文明的忠誠超越了對人性的關懷，這讓你成為了最可靠的守護者，同時也是最恐怖的處刑人。你的人性在數字面前早已乾枯，你不是在做選擇，你只是在執行一場無止盡的資源清算。當你走向深淵時，你計算的是墜落的速度，而非墜落的痛苦。你是文明最後的保險絲，也是第一個被燒斷的人。",
+      evidences: ["**[計算特徵]**：將人命數值化，拒絕任何非理性的情感干擾。", "**[秩序導向]**：極度崇尚規則，視個體悲劇為統計學上的必要誤差。"]
+    };
+
+    return {
+      title: "虛無的解構者",
+      source: "弗里德里希·尼采 (Nietzsche) ——《權力意志》",
+      color: "#a855f7",
+      content: "你正處於『末人』與『超人』之間的掙扎。你渴望超越世俗道德，卻又被殘存的良知拉扯。你在選擇中展現了對所有既定體系的厭惡。尼采曾說：『當你凝視深淵時，深淵也在凝視你。』你並非恐懼深淵，你只是恐懼在深淵中發現自己依然平庸。你試圖解構一切，卻在解構之後面臨無邊無際的虛無感。你的不可預測性是你唯一的武器，但也讓你成為了無家可歸的靈魂。你不需要救贖，你只需要一場能燒盡偽善的大火。你在廢墟中起舞，卻忘了世界早已沒有觀眾。",
+      evidences: ["**[解構特徵]**：頻繁選擇打破體系或不作為的選項。", "**[虛無特徵]**：在極端價值觀之間反覆橫跳，核心信念尚未定型。"]
+    };
+  }, [currentStep, scores, history]);
+
+  return (
+    <div className="min-h-screen bg-black text-white font-sans selection:bg-white selection:text-black">
+      <AnimatePresence mode="wait">
+        {currentStep === 0 && (
+          <motion.div key="start" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="mb-8 p-4 rounded-full bg-white/5 border border-white/10"><Eye size={48} /></motion.div>
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-4">ABYSS DECODER</h1>
+            <p className="text-white/40 max-w-md mb-12 text-lg font-light italic">這不是測驗，這是一面照妖鏡。</p>
+            <button onClick={() => setCurrentStep(1)} className="group flex items-center gap-3 px-10 py-5 bg-white text-black rounded-full font-bold hover:scale-105 transition-all">開始解碼 <ArrowRight size={20} /></button>
           </motion.div>
         )}
-      </AnimatePresence>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 py-10">
-        <AnimatePresence mode="wait">
-          {step === 'start' && (
-            <motion.div key="start" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="min-h-[85vh] flex flex-col items-center justify-center text-center space-y-12">
-              <div className="space-y-4">
-                <span className="text-[10px] font-mono tracking-[0.5em] text-zinc-500 uppercase">Neural Architecture & Ethics</span>
-                <h1 className="text-7xl sm:text-[120px] font-black tracking-tighter italic leading-none">ABYSS<br/><span className="text-white/20">DECODER</span></h1>
-                <p className="text-zinc-400 text-lg sm:text-2xl font-light tracking-widest max-w-2xl mx-auto">基於博弈論與倫理學的深度人格分析白皮書。</p>
-              </div>
-              <button onClick={() => setStep('quiz')} className="px-16 py-6 bg-white text-black rounded-full font-black text-xl hover:scale-105 transition-transform shadow-2xl">開始序列診斷</button>
-            </motion.div>
-          )}
+        {currentStep === 1 && (
+          <motion.div key="quiz" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-2xl mx-auto min-h-screen flex flex-col justify-center p-6">
+            <div className="mb-12">
+              <div className="flex justify-between text-[10px] tracking-widest text-white/30 uppercase mb-4"><span>Phase {(currentIndex+1).toString().padStart(2,'0')}</span><span>Total 21</span></div>
+              <div className="h-[2px] w-full bg-white/5"><motion.div animate={{ width: `${((currentIndex+1)/21)*100}%` }} className="h-full bg-white" /></div>
+            </div>
+            <div className="space-y-6 mb-12">
+              <h2 className="text-2xl md:text-3xl font-medium leading-tight">{questions[currentIndex].story}</h2>
+              <p className="text-white/50 text-xl font-light italic">{questions[currentIndex].text}</p>
+            </div>
+            <div className="grid gap-3">
+              {questions[currentIndex].options.map((opt, i) => (
+                <button key={i} onClick={() => handleAnswer(opt.weights, i)} className="group w-full text-left p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/30 transition-all flex justify-between items-center">
+                  <span className="text-lg font-light text-white/80">{opt.label}</span>
+                  <ChevronRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
-          {step === 'quiz' && (
-            <motion.div key="quiz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto pt-10 sm:pt-20">
-              <div className="flex justify-between items-center mb-16">
-                <div className="font-mono text-xs text-zinc-500 tracking-widest uppercase">Phase {currentIdx + 1} / 20</div>
-                <div className="h-0.5 w-40 sm:w-64 bg-zinc-900 rounded-full overflow-hidden">
-                  <motion.div className="h-full bg-white" animate={{ width: `${((currentIdx + 1) / 20) * 100}%` }} />
-                </div>
+        {currentStep === 2 && analysis && (
+          <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto py-20 px-6">
+            <div ref={resultRef} className="bg-black p-10 rounded-[40px] border border-white/10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-10 opacity-10"><Quote size={120} /></div>
+              <div className="text-center mb-16 relative z-10">
+                <div className="text-[10px] tracking-[0.5em] text-white/40 uppercase mb-6">— Analysis Report —</div>
+                <h1 className="text-6xl font-bold tracking-tighter mb-4" style={{ color: analysis.color }}>{analysis.title}</h1>
+                <p className="text-white/50 italic text-sm">{analysis.source}</p>
               </div>
-              <div className="space-y-12 sm:space-y-20">
-                <div className="space-y-8">
-                  <div className="flex gap-4 text-zinc-600"><Quote size={30} className="shrink-0" /><p className="text-xl sm:text-2xl italic font-light">{questions[currentIdx].story}</p></div>
-                  <h2 className="text-3xl sm:text-5xl font-bold text-white border-l-4 border-zinc-800 pl-6">{questions[currentIdx].text}</h2>
-                </div>
-                <div className="grid gap-4 sm:gap-6 pl-6 sm:pl-10">
-                  {questions[currentIdx].options.map((opt, i) => (
-                    <button key={i} onClick={() => handleSelect(opt)} className="w-full text-left p-8 sm:p-10 rounded-[30px] bg-zinc-900/40 border border-zinc-800 hover:border-white transition-all text-lg sm:text-xl font-light text-zinc-400 hover:text-white">
-                      {opt.label}
-                    </button>
+              <section className="p-10 rounded-[30px] bg-white/5 border border-white/5 mb-12"><p className="text-xl md:text-2xl leading-relaxed font-light text-white/90">{analysis.content}</p></section>
+              <section className="space-y-6">
+                <h3 className="text-[10px] tracking-[0.3em] uppercase text-white/30 flex items-center gap-2"><Zap size={14} /> 行為證據比對 / Connection with Choices</h3>
+                <div className="grid gap-4">
+                  {analysis.evidences.map((e, i) => (
+                    <div key={i} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 text-white/60 font-light leading-relaxed">
+                      {e.split('**').map((part, index) => index % 2 === 1 ? <strong key={index} className="text-white font-medium">{part}</strong> : part)}
+                    </div>
                   ))}
                 </div>
-              </div>
-            </motion.div>
-          )}
-
-          {step === 'result' && (
-            <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-24 sm:space-y-40 pb-40 text-center">
-              <header className="space-y-8 pt-10 sm:pt-20">
-                <div className="inline-block px-6 py-2 rounded-full border border-zinc-800 text-[10px] font-mono text-zinc-500 tracking-widest bg-zinc-900/50">NEURAL_PROFILE_VERIFIED</div>
-                <h2 className="text-6xl sm:text-[120px] font-black tracking-tighter text-white italic leading-none break-words px-4">{resultData.persona}</h2>
-                <div className="flex justify-center gap-4">
-                  <button onClick={copyLink} className="p-4 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-white hover:text-black transition-all"><Share2 size={20} /></button>
-                  <button onClick={() => setIsCapturing(true)} className="p-4 rounded-full bg-zinc-900 border border-zinc-800 hover:bg-white hover:text-black transition-all"><Download size={20} /></button>
-                </div>
-              </header>
-
-              <div className="grid lg:grid-cols-2 gap-10 items-center p-8 sm:p-20 rounded-[40px] sm:rounded-[80px] bg-zinc-900/20 border border-white/5 backdrop-blur-md mx-4">
-                <div className="flex justify-center relative">
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 50, repeat: Infinity, ease: "linear" }} className="w-64 h-64 sm:w-96 sm:h-96 border border-white/10 rounded-full" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <motion.div className="w-40 h-40 sm:w-64 sm:h-64 blur-[80px] opacity-30" style={{ backgroundColor: resultData.hex }} />
-                    <Fingerprint size={40} className="text-white/20" />
-                  </div>
-                </div>
-                <div className="text-left space-y-10">
-                   <h4 className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-800 pb-4">量化心理指標 / Metrics</h4>
-                   <div className="grid grid-cols-2 gap-8">
-                      {Object.entries(resultData.info.metrics).map(([key, val], i) => (
-                        <div key={i} className="space-y-2">
-                          <div className="text-[9px] text-zinc-600 font-mono uppercase">{key}</div>
-                          <div className="text-4xl font-light">{val}%</div>
-                          <div className="h-0.5 bg-zinc-900 w-full"><motion.div initial={{ width: 0 }} animate={{ width: `${val}%` }} transition={{ delay: 1, duration: 1.5 }} className="h-full bg-white opacity-40" /></div>
-                        </div>
-                      ))}
-                   </div>
-                </div>
-              </div>
-
-              <section className="max-w-4xl mx-auto px-6 text-left space-y-16">
-                <div className="space-y-10">
-                  <div className="flex items-center gap-4"><div className="w-10 h-px bg-white" /><span className="text-[10px] font-mono text-white tracking-widest uppercase">核心人格分析</span></div>
-                  <p className="text-xl sm:text-2xl text-zinc-400 font-light leading-relaxed text-justify">{resultData.info.analysis}</p>
-                </div>
-                <div className="p-10 sm:p-16 rounded-[40px] bg-white/[0.02] border border-white/5 relative overflow-hidden">
-                  <Target size={150} className="absolute -right-10 -top-10 text-white/[0.02]" />
-                  <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest block mb-6">行為進化指南 / Advice</span>
-                  <p className="text-2xl sm:text-3xl text-white font-extralight italic leading-snug">「{resultData.info.advice}」</p>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-10 border-t border-zinc-900 pt-16">
-                  <div className="space-y-4">
-                    <h4 className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">理論背書來源</h4>
-                    <div className="flex items-center gap-2 text-white"><BookOpen size={14} /> <span className="text-lg">{resultData.info.theory}</span></div>
-                    <p className="text-xs text-zinc-500 italic">Ref: {resultData.info.source}</p>
-                  </div>
-                  <div className="space-y-4">
-                    <h4 className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">系統狀態</h4>
-                    <div className="text-lg text-zinc-300 italic">Global Ethics Research Lab</div>
-                    <p className="text-[9px] text-zinc-700 uppercase">Neural processing completed by ABYSS ENGINE V4.2.</p>
-                  </div>
-                </div>
               </section>
-
-              <button onClick={() => window.location.reload()} className="px-12 py-5 bg-zinc-900 text-zinc-500 rounded-full font-mono text-xs tracking-widest border border-zinc-800 hover:border-zinc-600 transition-all uppercase">Reboot Neural Scanner</button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <AnimatePresence>
-        {isCapturing && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-center p-6 text-center" onClick={() => setIsCapturing(false)}>
-            <div className="w-full max-w-sm aspect-[9/16] bg-zinc-900 border border-white/10 rounded-3xl p-8 flex flex-col justify-between text-left relative overflow-hidden">
-               <div className="absolute inset-0 opacity-20" style={{ background: `radial-gradient(circle at top, ${resultData.hex}, transparent)` }} />
-               <div className="relative z-10 space-y-4">
-                  <div className="text-[10px] font-mono text-zinc-500 tracking-widest">ABYSS DECODER RESULT</div>
-                  <div className="text-4xl font-black italic text-white leading-tight">{resultData.persona}</div>
-                  <p className="text-xs text-zinc-400 font-light leading-relaxed line-clamp-[12]">{resultData.info.analysis.slice(0, 250)}...</p>
-               </div>
-               <div className="relative z-10 pt-6 border-t border-white/10 flex justify-between items-end">
-                  <div><div className="text-[8px] font-mono text-zinc-600 uppercase">Verified Theory</div><div className="text-[10px] text-white font-medium">{resultData.info.theory}</div></div>
-                  <Globe size={20} className="text-white/20" />
-               </div>
+              <div className="mt-20 pt-10 border-t border-white/5 text-center text-[10px] text-white/20 tracking-[0.4em] uppercase">Deep Abyss Decoded © 2026</div>
             </div>
-            <p className="mt-8 text-white/40 text-sm animate-pulse">長按上方海報即可儲存至相簿</p>
+            <div className="mt-12 flex flex-wrap justify-center gap-4">
+              <button onClick={downloadReport} className="flex items-center gap-3 px-8 py-4 bg-white/10 hover:bg-white/20 rounded-full transition-all border border-white/10"><Download size={18} /> 保存靈魂解剖圖</button>
+              <button onClick={copyLink} className="flex items-center gap-3 px-8 py-4 bg-white text-black rounded-full font-bold transition-all"><Share2 size={18} /> 複製分享連結</button>
+              <button onClick={() => window.location.reload()} className="flex items-center gap-2 px-8 py-4 text-white/30 hover:text-white transition-all"><RefreshCcw size={16} /> 重新進入深淵</button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
   );
-};
-
-export default App;
+}

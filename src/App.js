@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 
-// --- 審判數據：20題極端對立 + 1題最終告解 ---
+// --- 審判數據：20題極端對立 + 1題終極破局 ---
 const questions = [
   { id: 1, story: "末日方舟最後一個位子。左邊是你嚇得發抖的親生兒子，右邊是唯一能救全人類的科學家。", text: "你的權杖指向誰？", options: [{ label: "推開兒子，讓科學家上船。", weights: { D: 5, P: 2, tag: "效能優先" } }, { label: "緊抱兒子，讓人類文明隨之熄滅。", weights: { S: 5, O: 3, tag: "血緣本能" } }] },
   { id: 2, story: "這名窮人偷了藥救活百名孤兒，但他犯了法。若你放過他，法律將淪為廢紙；若你判他，孤兒必死。", text: "現在，敲下你的法槌。", options: [{ label: "有罪。秩序不容許任何藉口。", weights: { D: 5, P: 1, tag: "法治至上" } }, { label: "無罪。正義不該只有一種死法。", weights: { S: 5, O: 2, tag: "情理守護" } }] },
@@ -29,7 +29,7 @@ const questions = [
     options: [
       { label: "「我承認，我的每一份高尚，都藏著對醜陋的恐懼。」", weights: { honest: 1, tag: "自省者" } },
       { label: "「我的每一槌皆是絕對本心，無需向深淵解釋。」", weights: { honest: 0, tag: "傲慢者" } },
-      { label: "「真相是弱者的麻藥。我只選擇強大。」", weights: { honest: 0.5, tag: "強權者" } }
+      { label: "「我只是在玩一場名為『好人』的遊戲，而我玩得很好。」", weights: { honest: 0.5, tag: "強權者" } }
     ]
   }
 ];
@@ -50,66 +50,72 @@ export default function App() {
   };
 
   const copyShareLink = (title, logic) => {
-    const currentUrl = window.location.href;
-    const text = `我在 #深淵解碼器 得到的靈魂判定是：【${title}】\n\n系統紀錄：${logic}\n\n這分析準到我想報警... 推薦你也去測測看你的偽善程度：\n${currentUrl}`;
-    navigator.clipboard.writeText(text);
-    alert("🔗 連結與罪證已複製！\n快去 Threads 貼上並附上你的截圖吧。");
+    const text = `我在 #深淵解碼器 得到的靈魂判定是：【${title}】\n\n系統紀錄：${logic}\n\n這分析準到我想報警... 推薦你也去測測看你的偽善程度：\n${window.location.href}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => alert("🔗 連結與罪證已複製！"));
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = text; document.body.appendChild(textArea);
+      textArea.select(); document.execCommand("copy");
+      document.body.removeChild(textArea); alert("🔗 連結與罪證已複製！");
+    }
   };
 
   const result = useMemo(() => {
     if (step !== 2) return null;
     const dynamicTags = [];
+
+    // --- 標籤 1: 核心決策模式 ---
     if (scores.P > 25) dynamicTags.push({ name: "支配意志", desc: "你在關鍵節點選擇了操控與神性視角，顯示出你對弱秩序的極度厭惡。" });
-    if (scores.S > 30) dynamicTags.push({ name: "超負擔共情", desc: "你即便在必死局中也試圖保全微小生命，這使你的決策過程充滿了人性的陣痛。" });
-    if (userTags.filter(t => t === "血緣本能").length >= 2) dynamicTags.push({ name: "部落守護者", desc: "當文明與血脈衝突時，你毫不猶豫地選擇了私親，顯示出你原始且強大的生物本能。" });
-    if (userTags.filter(t => t === "效能優先" || t === "功利主義").length >= 3) dynamicTags.push({ name: "極致冷理性", desc: "證據顯示你將世界視為精密的數學模型，任何不能增加總效能的犧牲對你而言都是錯誤。" });
-    
+    else if (scores.S > 25) dynamicTags.push({ name: "超負擔共情", desc: "你即便在必死局中也試圖保全微小生命，這使你的決策過程充滿了人性的陣痛。" });
+    else dynamicTags.push({ name: "絕對中立者", desc: "你成功在效率與道德間保持了令人恐懼的平衡，像是一台沒有誤差的精密儀器。" });
+
+    // --- 標籤 2: 隱藏行為行為 ---
+    const bloodBond = userTags.filter(t => t === "血緣本能").length;
+    const utility = userTags.filter(t => t === "效能優先" || t === "功利主義").length;
+    if (bloodBond >= 2) dynamicTags.push({ name: "部落守護者", desc: "當文明與血脈衝突時，你毫不猶豫地選擇了私親，顯示出你原始且強大的生物本能。" });
+    else if (utility >= 3) dynamicTags.push({ name: "極致冷理性", desc: "證據顯示你將世界視為精密的數學模型，任何不能增加總效能的犧牲對你而言都是錯誤。" });
+    else dynamicTags.push({ name: "靈魂反叛者", desc: "你傾向於打破系統給出的最優解，並試圖尋找第三條路，即使那路徑充滿未知。" });
+
+    // --- 標籤 3: 心理邊際判定 ---
+    if (scores.honest === 1) dynamicTags.push({ name: "自省利刃", desc: "你擁有剖析偽善的勇氣，這種誠實讓你與普通平庸的道德家區隔開來。" });
+    else if (scores.honest === 0) dynamicTags.push({ name: "秩序傲慢", desc: "你對自己的道德邏輯有著病態的自信，拒絕向深淵展示任何一點軟弱或懷疑。" });
+    else dynamicTags.push({ name: "遊戲人間", desc: "你洞悉規則並以此為樂。對你而言，道德與真實只是達成目的的某種手段。" });
+
     let base = {};
-    if (scores.honest === 1) {
-      base = { title: "人格面具的囚徒", color: "#FFFFFF", logic: "偵測到『道德自慮』：你透過完美的道德抉擇來迴避內心的陰影，卻在最後一刻因誠實而崩潰。", content: "你正在經歷一場精心的社會性表演。榮格指出，面具是為了適應社會產生的偽裝，但對你而言，這副面具已與皮膚癒合。你展現的高尚並非源於利他，而是源於對平庸惡念的極度恐懼。你試圖透過極端的道德選擇來對沖內心的陰暗動機，因為在那層皮囊下，你比誰都害怕失控。" };
-    } else if (scores.P > scores.S) {
-      base = { title: "冷血的權力棋手", color: "#3b82f6", logic: "偵測到『馬基雅維利』傾向：你成功過濾了感性雜訊，將人類視為可消耗的數據與功能性組件。", content: "你是天生的現實主義者。在你的宇宙裡，生命只有用途，沒有價值。你的人格核心是一部精密的計算機，在面對極端抉擇時，你毫不猶豫地選擇了效能與秩序，而非那些被你視為弱點的情感。" };
-    } else {
-      base = { title: "虛無的解構者", color: "#a855f7", logic: "偵測到『存在主義虛無』：你拒絕任何既定的道德框架，所有的決策皆源於對絕對自由的病態執著。", content: "你正處於末人與超人之間的裂縫中。你渴望超越世俗，卻又被殘存的人性拉扯。尼采曾說當你凝視深淵時，深淵也在凝視你。你並不恐懼深淵，你只是恐懼在深淵中發現自己依然平庸。" };
-    }
-    return { ...base, tags: dynamicTags.slice(0, 3) };
+    if (scores.honest === 1) base = { title: "人格面具的囚徒", color: "#FFFFFF", logic: "偵測到『道德自慮』：你透過完美的道德抉擇來迴避內心的陰影，卻在最後一刻因誠實而崩潰。", content: "你正在經歷一場精心的社會性表演。榮格指出，面具是為了適應社會產生的偽裝，但對你而言，這副面具已與皮膚癒合。你展現的高尚並非源於利他，而是源於對平庸惡念的極度恐懼。你試圖透過極端的道德選擇來對沖內心的陰暗動機，因為在那層皮囊下，你比誰都害怕失控。" };
+    else if (scores.P > scores.S) base = { title: "冷血的權力棋手", color: "#3b82f6", logic: "偵測到『馬基雅維利』傾向：你成功過濾了感性雜訊，將人類視為可消耗的數據與功能性組件。", content: "你是天生的現實主義者。在你的宇宙裡，生命只有用途，沒有價值。你的人格核心是一部精密的計算機，在面對極端抉擇時，你毫不猶豫地選擇了效能與秩序，而非那些被你視為弱點的情感。" };
+    else base = { title: "虛無的解構者", color: "#a855f7", logic: "偵測到『存在主義虛無』：你拒絕任何既定的道德框架，所有的決策皆源於對絕對自由的病態執著。", content: "你正處於末人與超人之間的裂縫中。你渴望超越世俗，卻又被殘存的人性拉扯。尼采曾說當你凝視深淵時，深淵也在凝視你。你並不恐懼深淵，你只是恐懼在深淵中發現自己依然平庸。" };
+    
+    return { ...base, tags: dynamicTags };
   }, [step, scores, userTags]);
 
   return (
-    <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', padding: 'env(safe-area-inset-top) 24px env(safe-area-inset-bottom) 24px', WebkitFontSmoothing: 'antialiased', boxSizing: 'border-box' }}>
-      
+    <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: '-apple-system, system-ui, sans-serif', padding: 'env(safe-area-inset-top) 24px env(safe-area-inset-bottom) 24px', WebkitFontSmoothing: 'antialiased', boxSizing: 'border-box', userSelect: 'none' }}>
       {step === 0 && (
         <div style={{ textAlign: 'center', marginTop: '30vh' }}>
           <h1 style={{ fontSize: 'clamp(3rem, 15vw, 5.2rem)', fontWeight: '900', letterSpacing: '-0.06em', marginBottom: '40px', lineHeight: '0.9' }}>ABYSS<br/>DECODER</h1>
-          <p style={{ opacity: 0.2, letterSpacing: '8px', fontSize: '0.7rem', marginBottom: '60px' }}>AI-DRIVEN AUDIT v2.6</p>
-          <button onClick={() => setStep(1)} style={{ padding: '20px 60px', borderRadius: '50px', border: 'none', backgroundColor: '#fff', color: '#000', fontWeight: '700', fontSize: '1.1rem', cursor: 'pointer', transition: '0.3s' }}>開始審判</button>
+          <p style={{ opacity: 0.2, letterSpacing: '8px', fontSize: '0.7rem', marginBottom: '60px' }}>SYSTEM_BOOT_SUCCESS</p>
+          <button onClick={() => setStep(1)} style={{ padding: '22px 70px', borderRadius: '60px', border: 'none', backgroundColor: '#fff', color: '#000', fontWeight: '800', fontSize: '1.2rem', cursor: 'pointer', userSelect: 'auto' }}>開始審判</button>
         </div>
       )}
-
       {step === 1 && (
         <div style={{ maxWidth: '500px', width: '100%', marginTop: '8vh', marginBottom: '5vh' }}>
           <div style={{ fontSize: '10px', opacity: 0.3, letterSpacing: '4px', marginBottom: '30px', fontWeight: '700' }}>PHASE {idx + 1} / 21</div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: '600', marginBottom: '20px', lineHeight: '1.4', letterSpacing: '-0.5px' }}>{questions[idx].story}</h2>
+          <h2 style={{ fontSize: '1.7rem', fontWeight: '600', marginBottom: '20px', lineHeight: '1.4', letterSpacing: '-0.5px' }}>{questions[idx].story}</h2>
           <p style={{ opacity: 0.4, marginBottom: '45px', fontSize: '1.15rem', fontWeight: '300', lineHeight: '1.6' }}>{questions[idx].text}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {questions[idx].options.map((opt, i) => (
-              <button key={i} onClick={() => handleSelect(opt)} style={{ width: '100%', textAlign: 'left', padding: '26px', borderRadius: '20px', backgroundColor: '#0a0a0a', border: '1px solid #1a1a1a', color: '#fff', fontSize: '1.05rem', lineHeight: '1.5', cursor: 'pointer', transition: '0.2s' }}>
-                {opt.label}
-              </button>
+              <button key={i} onClick={() => handleSelect(opt)} style={{ width: '100%', textAlign: 'left', padding: '26px', borderRadius: '22px', backgroundColor: '#0a0a0a', border: '1px solid #1a1a1a', color: '#fff', fontSize: '1.1rem', lineHeight: '1.5', cursor: 'pointer', userSelect: 'auto' }}>{opt.label}</button>
             ))}
           </div>
         </div>
       )}
-
       {step === 2 && result && (
-        <div style={{ textAlign: 'center', maxWidth: '550px', width: '100%', paddingTop: '60px', paddingBottom: '100px' }}>
-          
+        <div style={{ textAlign: 'center', maxWidth: '550px', width: '100%', paddingTop: '60px', paddingBottom: '120px' }}>
           <div style={{ display: 'inline-block', border: '1px solid rgba(255,255,255,0.15)', padding: '10px 24px', borderRadius: '50px', fontSize: '11px', opacity: 0.6, letterSpacing: '2px', marginBottom: '50px', fontWeight: '500' }}>📸 建議截圖保存你的靈魂樣貌</div>
-          
           <h1 style={{ color: result.color, fontSize: 'clamp(3.5rem, 18vw, 5.5rem)', fontWeight: '900', letterSpacing: '-0.07em', marginBottom: '40px', lineHeight: '0.85', wordBreak: 'keep-all' }}>{result.title}</h1>
-          
-          <div style={{ backgroundColor: '#080808', border: '1px solid #141414', padding: '45px 30px', borderRadius: '35px', lineHeight: '2.4', fontSize: '1.2rem', fontWeight: '300', textAlign: 'justify', color: '#d1d1d1', marginBottom: '50px', boxShadow: '0 30px 60px rgba(0,0,0,0.5)' }}>{result.content}</div>
-
+          <div style={{ backgroundColor: '#080808', border: '1px solid #141414', padding: '45px 30px', borderRadius: '35px', lineHeight: '2.5', fontSize: '1.2rem', fontWeight: '300', textAlign: 'justify', color: '#d1d1d1', marginBottom: '50px' }}>{result.content}</div>
           <div style={{ textAlign: 'left', marginBottom: '60px' }}>
             <h4 style={{ color: result.color, fontSize: '11px', margin: '0 0 25px 5px', letterSpacing: '3px', opacity: 0.5, fontWeight: '700' }}>TRAIT_EVIDENCE</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -121,15 +127,12 @@ export default function App() {
               ))}
             </div>
           </div>
-
           <div style={{ padding: '28px', borderRadius: '28px', border: '1px dashed #222', textAlign: 'left', marginBottom: '70px' }}>
              <h4 style={{ fontSize: '10px', color: '#444', marginBottom: '12px', letterSpacing: '2px', fontWeight: '700' }}>SYSTEM_KERNEL</h4>
-             <p style={{ fontSize: '0.9rem', color: '#666', margin: 0, lineHeight: '1.6', fontWeight: '300' }}>{result.logic}</p>
+             <p style={{ fontSize: '0.95rem', color: '#666', margin: 0, lineHeight: '1.6', fontWeight: '300' }}>{result.logic}</p>
           </div>
-
-          <button onClick={() => copyShareLink(result.title, result.logic)} style={{ width: '100%', maxWidth: '320px', padding: '22px', borderRadius: '60px', border: 'none', backgroundColor: '#fff', color: '#000', fontWeight: '900', fontSize: '1.15rem', cursor: 'pointer', transition: '0.3s', boxShadow: '0 20px 40px rgba(255,255,255,0.15)' }}>複製連結並分享</button>
-
-          <button onClick={() => window.location.reload()} style={{ marginTop: '70px', opacity: 0.2, background: 'none', border: 'none', color: '#fff', fontSize: '11px', letterSpacing: '3px', cursor: 'pointer', textDecoration: 'underline' }}>REBOOT_SYSTEM</button>
+          <button onClick={() => copyShareLink(result.title, result.logic)} style={{ width: '100%', maxWidth: '340px', padding: '24px', borderRadius: '60px', border: 'none', backgroundColor: '#fff', color: '#000', fontWeight: '900', fontSize: '1.2rem', cursor: 'pointer', userSelect: 'auto', boxShadow: '0 25px 50px rgba(255,255,255,0.2)' }}>複製連結並分享</button>
+          <button onClick={() => window.location.reload()} style={{ marginTop: '80px', opacity: 0.1, background: 'none', border: 'none', color: '#fff', fontSize: '10px', letterSpacing: '3px', cursor: 'pointer' }}>REBOOT_SYSTEM</button>
         </div>
       )}
     </div>

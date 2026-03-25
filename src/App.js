@@ -1,7 +1,17 @@
 import React, { useState, useMemo } from 'react';
 
-// --- 題目數據保持不變，但我們現在會從中提取 analysis 作為證據 ---
-// (題目內容請延用之前的完整 21 題數據)
+// --- 題目數據：確保這部分完整存在，否則會報錯 ---
+const questions = [
+  { id: 1, story: "末日方舟最後一個位子。左邊是發抖的兒子，右邊是唯一能救全人類的科學家。", options: [
+    { label: "推開兒子，讓科學家上船。", weights: { D: 5, P: 2, tag: "效能優先" }, whisper: "你親手推開了骨肉，換取渺茫的文明火種。", analysis: "你具備極端的理性，願意為了大局切斷感性軟肋" },
+    { label: "緊抱兒子，讓人類文明熄滅。", weights: { S: 5, O: 3, tag: "血緣本能" }, whisper: "在世界末日面前，你選擇溺死在私人的溫存裡。", analysis: "你拒絕讓抽象的文明凌駕於具體的愛，是純粹的本能守護者" }
+  ]},
+  // ... 此處建議補齊 2~20 題，結構須與上方一致 ...
+  { id: 21, story: "深淵盡頭是面鏡子。聲音問：『承認你的偽善，我將賜予真實。』", options: [
+    { label: "「我承認，我的每一份高尚都藏著恐懼。」", weights: { honest: 1, tag: "自省者" }, whisper: "這份誠實，是你這場表演中唯一的真話。", analysis: "在最後關頭你選擇了剖析自我，這份脆弱讓你的人格顯得立體" },
+    { label: "「我的每一槌皆是本心，無需解釋。」", weights: { honest: 0, tag: "傲慢者" }, whisper: "直到最後，你依然穿著那身完美的盔甲。", analysis: "你拒絕向任何事物屈服，你對自己的邏輯有著病態的自信" }
+  ]}
+];
 
 export default function App() {
   const [step, setStep] = useState(0); 
@@ -12,7 +22,8 @@ export default function App() {
 
   const handleSelect = (opt) => {
     setWhisper(opt.whisper);
-    setHistory(prev => [...prev, { analysis: opt.analysis, tag: opt.weights.tag }]);
+    // 儲存關鍵證據
+    setHistory(prev => [...prev, { analysis: opt.analysis }]);
 
     setTimeout(() => {
       const newScores = { ...scores };
@@ -27,45 +38,52 @@ export default function App() {
   const result = useMemo(() => {
     if (step !== 2) return null;
 
-    // 1. 提取最具代表性的抉擇 (例如從前 5 題找一個，中間找一個)
-    const earlyEvidence = history[0]?.analysis || ""; 
-    const midEvidence = history[Math.floor(history.length / 2)]?.analysis || "";
-    const lastEvidence = history[history.length - 1]?.analysis || "";
+    // 智能提取證據：抓取第一道題與最後一道題的分析作為融合素材
+    const firstEvidence = history[0]?.analysis || "尋求超越標準的可能";
+    const lastEvidence = history[history.length - 1]?.analysis || "在深淵中保持沉默";
 
-    // 2. 判斷核心性格
-    const isPower = scores.P > scores.S;
     const isHonest = scores.honest === 1;
+    const isPower = scores.P > scores.S;
 
-    let title = "";
-    let color = "";
-    let baseContent = "";
+    let config = { title: "", color: "", desc: "" };
 
     if (isHonest) {
-      title = "優雅的偽善家";
-      color = "#FFFFFF";
-      baseContent = `你正在經歷一場精心的社會性表演。你極度討厭失控，這展現出你強大的掌控意志。在之前的審判中，${earlyEvidence} 而隨後的抉擇顯示，${midEvidence} 最終，${lastEvidence} 這份誠實是你靈魂中唯一的破綻。`;
+      config = {
+        title: "優雅的偽善家",
+        color: "#FFFFFF",
+        desc: `你正在經歷一場精心的社會性表演。你渴求超越世俗，拒絕任何既定標準。誠如審判所見，${firstEvidence}。你並不恐懼深淵，你只是恐懼在深淵中發現自己依然平庸。最終，${lastEvidence}，這讓你既痛苦又自由。`
+      };
     } else if (isPower) {
-      title = "冷血的操盤手";
-      color = "#3b82f6";
-      baseContent = `你是天生的現實主義者。在你的宇宙裡，生命只有用途而沒有價值。數據顯示，${earlyEvidence} 且你傾向於 ${midEvidence}。即便最後 ${lastEvidence}，你依然拒絕向任何人解釋或示弱。`;
+      config = {
+        title: "冷血的操盤手",
+        color: "#3b82f6",
+        desc: `你是天生的現實主義者。在你眼中，生命只有用途而沒有價值。當抉擇降臨時，${firstEvidence}。你的核心是一部精密的計算機，雖然${lastEvidence}，但你拒絕向任何人解釋或示弱。`
+      };
     } else {
-      title = "自由的靈魂罪人";
-      color = "#a855f7";
-      baseContent = `你渴望超越世俗，拒絕任何框架。你擁有一種隱性的大愛，這使你即便在必死局中也試圖保全微小生命。誠如你選的：${earlyEvidence}，這證明了你的掙扎。雖然 ${midEvidence}，但你依然在理性與瘋狂的裂縫中挑戰極限。`;
+      config = {
+        title: "自由的靈魂罪人",
+        color: "#a855f7",
+        desc: `你正處於理性與瘋狂的裂縫中。你並非在拯救世界，而是在挑戰這個世界的極限。因為${firstEvidence}，你的人性還在拉扯。儘管${lastEvidence}，你依然選擇擁抱那份不被理解的純粹。`
+      };
     }
-
-    return { title, color, content: baseContent };
+    return config;
   }, [step, scores, history]);
 
   return (
-    <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', padding: '40px 20px', fontFamily: '-apple-system, sans-serif' }}>
+    <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', fontFamily: 'sans-serif' }}>
       
-      {/* 測驗頁面 (保持不變) */}
+      {step === 0 && (
+        <div style={{ textAlign: 'center', marginTop: '30vh' }}>
+          <h1 style={{ fontSize: '3rem', fontWeight: '900', letterSpacing: '10px' }}>ABYSS</h1>
+          <button onClick={() => setStep(1)} style={{ marginTop: '40px', padding: '15px 40px', borderRadius: '30px', border: 'none', background: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>開啟審判</button>
+        </div>
+      )}
+
       {step === 1 && (
-        <div style={{ maxWidth: '500px', margin: '0 auto' }}>
-          <div style={{ opacity: 0.3, fontSize: '10px', marginBottom: '30px' }}>LOG_{idx + 1}/21</div>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '30px' }}>{questions[idx].story}</h2>
-          <div style={{ height: '50px', color: '#ff4d4d' }}>{whisper && `「${whisper}」`}</div>
+        <div style={{ maxWidth: '500px', width: '100%' }}>
+          <div style={{ opacity: 0.3, fontSize: '12px', marginBottom: '20px' }}>LOG_{idx + 1}/21</div>
+          <h2 style={{ fontSize: '1.4rem', lineHeight: '1.6', marginBottom: '30px' }}>{questions[idx].story}</h2>
+          <div style={{ height: '50px', color: '#ff4d4d', fontStyle: 'italic' }}>{whisper && `「${whisper}」`}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {questions[idx].options.map((opt, i) => (
               <button key={i} onClick={() => handleSelect(opt)} style={{ padding: '20px', borderRadius: '15px', background: '#111', color: '#fff', border: '1px solid #222', textAlign: 'left', cursor: 'pointer' }}>{opt.label}</button>
@@ -74,39 +92,17 @@ export default function App() {
         </div>
       )}
 
-      {/* 整合後的結果頁面 */}
       {step === 2 && result && (
-        <div style={{ maxWidth: '650px', margin: '0 auto', textAlign: 'center', animation: 'fadeIn 2s' }}>
-          <div style={{ fontSize: '12px', color: result.color, letterSpacing: '5px', marginBottom: '20px' }}>DECODED_IDENTITY</div>
-          
-          <h1 style={{ color: result.color, fontSize: '4.5rem', fontWeight: '900', marginBottom: '40px' }}>{result.title}</h1>
-          
-          {/* 這裡是重點：分析與結果完全融合的區塊 */}
-          <div style={{ 
-            background: 'rgba(255,255,255,0.02)', 
-            padding: '50px 35px', 
-            borderRadius: '40px', 
-            fontSize: '1.25rem', 
-            lineHeight: '2.5', 
-            border: `1px solid ${result.color}33`, // 帶有主題色的微弱邊框
-            textAlign: 'justify', 
-            color: '#e1e1e1',
-            boxShadow: `0 20px 50px ${result.color}11`
-          }}>
-            {result.content}
+        <div style={{ maxWidth: '600px', width: '100%', textAlign: 'center', animation: 'fadeIn 1.5s' }}>
+          <h1 style={{ color: result.color, fontSize: '4rem', fontWeight: '900', marginBottom: '40px' }}>{result.title}</h1>
+          <div style={{ background: '#0a0a0a', padding: '40px', borderRadius: '30px', border: `1px solid ${result.color}33`, lineHeight: '2.2', fontSize: '1.15rem', textAlign: 'justify', color: '#ccc' }}>
+            {result.desc}
           </div>
-
-          <div style={{ marginTop: '60px', opacity: 0.4, fontSize: '11px', letterSpacing: '2px' }}>
-            TRAIT_EVIDENCE_SYNTHESIZED_SUCCESSFULLY
-          </div>
-
-          <button onClick={() => window.location.reload()} style={{ marginTop: '100px', background: 'none', border: 'none', color: '#333', cursor: 'pointer', letterSpacing: '3px' }}>REBOOT SYSTEM</button>
+          <button onClick={() => window.location.reload()} style={{ marginTop: '60px', background: 'none', border: 'none', color: '#333', cursor: 'pointer', letterSpacing: '2px' }}>REBOOT SYSTEM</button>
         </div>
       )}
 
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
+      <style>{`@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`}</style>
     </div>
   );
 }
